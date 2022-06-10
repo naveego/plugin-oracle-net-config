@@ -1,0 +1,83 @@
+{
+  "id": "plugin-oracle-net",
+  "displayName": "Oracle .NET",
+  "description": "Publisher which connects to Oracle using .NET Framework",
+  "apiVersion": "2",
+  "versionDescription": "Version 1",
+  "version": "1.0.0-beta2",
+  "iconFile": "icon.png",
+  "executable": "PluginOracleNet",
+  "kind": "publisher",
+  "os": "$GOOS",
+  "arch": "$GOARCH",
+  "accessGroups": [],
+  "canConfigure": true,
+  "canProduceMultipleSchemas": true,
+  "canAcceptQueryBasedSchemas": true,
+  "canUseOAuth": false,
+  "canConfigureWrite": true,
+  "canWrite": true,
+  "canConfigureReplication": true,
+  "canWriteReplication": true,
+  "querySchema": {
+    "ui": {
+      "ui:widget": "code",
+      "ui:options": {
+        "language": "sql"
+      }
+    },
+    "schema": {
+      "type": "string"
+    }
+  },
+  "configSchema": {
+    "ui": {
+      "ui:order": [
+        "Hostname",
+        "Port",
+        "ServiceName",
+        "Username",
+        "Password"
+      ],
+      "Password": {
+        "ui:widget": "password"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "Hostname": {
+          "type": "string",
+          "title": "Hostname",
+          "description": "The hostname of the Oracle Server"
+        },
+        "Port": {
+          "type": "string",
+          "title": "Port",
+          "description": "The port of the Oracle Server"
+        },
+        "Username": {
+          "type": "string",
+          "title": "Username",
+          "description": "The username to use for authentication"
+        },
+        "Password": {
+          "type": "string",
+          "title": "Password",
+          "description": "The password to use for authentication"
+        },
+        "ServiceName": {
+          "type": "string",
+          "title": "ServiceName",
+          "description": "The service name within the Oracle Server"
+        }
+      },
+      "required": [
+        "Hostname",
+        "Username",
+        "Password",
+        "ServiceName"
+      ]
+    }
+  }
+}
