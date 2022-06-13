@@ -2,72 +2,82 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
-using PluginOracleNet.API.Factory;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.API.Discover
+namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {
-        private const string GetTableAndColumnsQuery = @"
-            SELECT 
-                t.OWNER,
-                t.TABLE_NAME,
-                c.COLUMN_NAME,
-                c.DATA_TYPE,
-                c.DATA_LENGTH,
-                c.DATA_PRECISION,
-                c.DATA_SCALE,
-                c.NULLABLE,
-                CASE
-                    WHEN tc.CONSTRAINT_TYPE = 'P'
-                        THEN 'P'
-                    ELSE NULL
-                END AS CONSTRAINT_TYPE
-            FROM ALL_TABLES t
-                INNER JOIN ALL_TAB_COLUMNS c ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
-                LEFT OUTER JOIN all_cons_columns ccu ON ccu.COLUMN_NAME = c.COLUMN_NAME AND ccu.TABLE_NAME = t.TABLE_NAME AND ccu.OWNER = t.OWNER
-                LEFT OUTER JOIN SYS.ALL_CONSTRAINTS tc ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME AND tc.OWNER = ccu.OWNER
-                WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
-                AND t.OWNER='{0}' AND t.TABLE_NAME='{1}'
-                ORDER BY t.TABLE_NAME, c.COLUMN_ID";
+        // private const string GetTableAndColumnsQuery = @"
+        //     SELECT 
+        //         t.OWNER,
+        //         t.TABLE_NAME,
+        //         c.COLUMN_NAME,
+        //         c.DATA_TYPE,
+        //         c.DATA_LENGTH,
+        //         c.DATA_PRECISION,
+        //         c.DATA_SCALE,
+        //         c.NULLABLE,
+        //         CASE
+        //             WHEN tc.CONSTRAINT_TYPE = 'P'
+        //                 THEN 'P'
+        //             ELSE NULL
+        //         END AS CONSTRAINT_TYPE
+        //     FROM ALL_TABLES t
+        //         INNER JOIN ALL_TAB_COLUMNS c ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
+        //         LEFT OUTER JOIN all_cons_columns ccu ON ccu.COLUMN_NAME = c.COLUMN_NAME AND ccu.TABLE_NAME = t.TABLE_NAME AND ccu.OWNER = t.OWNER
+        //         LEFT OUTER JOIN SYS.ALL_CONSTRAINTS tc ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME AND tc.OWNER = ccu.OWNER
+        //         WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA')
+        //         AND t.OWNER='{0}' AND t.TABLE_NAME='{1}'
+        //         ORDER BY t.TABLE_NAME, c.COLUMN_ID";
 
-        public static async Task<Schema> GetRefreshSchemaForTable(IConnectionFactory connFactory, Schema schema,
+        public static async Task<Schema> GetRefreshSchemaForTable(IConnectionFactory connFactory, Settings settings, Schema schema,
             int sampleSize = 5)
         {
-            var decomposed = DecomposeSafeName(schema.Id).TrimEscape();
-            var conn = connFactory.GetConnection();
+            // read in schema from settings
+            var importSchema = Utility.Utility.ReadTableConfigsFromJson(settings.ConfigSchemaFilePath, schema.Id);
 
-            await conn.OpenAsync();
-
-            var cmd = connFactory.GetCommand(
-                string.Format(GetTableAndColumnsQuery, decomposed.Schema, decomposed.Table), conn);
-            var reader = await cmd.ExecuteReaderAsync();
-            var refreshProperties = new List<Property>();
-
-            while (await reader.ReadAsync())
+            // create new schema
+            var outputSchema = new Schema()
             {
+                Id = schema.Id,
+                //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(importSchema.Query)}",
+                Name = $"{settings.Username.ToAllCaps()}.{importSchema.Id}",
+                DataFlowDirection = GetDataFlowDirection(importSchema.DataFlowDirection)
+            };
+            
+            // return an updated version from the settings object
+            var refreshProperties = new List<Property>();
+            
+            foreach (var p in importSchema.Properties)
+            {
+                
                 // add column to refreshProperties
                 var property = new Property
                 {
-                    Id = Utility.Utility.GetSafeName(reader.GetValueById(ColumnName).ToString()),
-                    Name = reader.GetValueById(ColumnName).ToString(),
-                    IsKey = reader.GetValueById(ConstraintType).ToString() == "P",
-                    IsNullable = reader.GetValueById(Nullable).ToString() == "Y",
+                    Id = Utility.Utility.GetSafeName(p.Id),
+                    Name = p.Id,
+                    IsKey = p.IsKey,
+                    IsNullable = p.IsNullable,
                     Type = GetType(
-                        reader.GetValueById(DataType).ToString(),
-                        reader.GetValueById(DataLength),
-                        reader.GetValueById(DataPrecision),
-                        reader.GetValueById(DataScale)
+                        p.Type,
+                        p.DataLength,
+                        p.DataPrecision,
+                        p.DataScale
                     ),
                     TypeAtSource = GetTypeAtSource(
-                        reader.GetValueById(DataType).ToString(),
-                        reader.GetValueById(DataLength),
-                        reader.GetValueById(DataPrecision),
-                        reader.GetValueById(DataScale)
-                    )
+                        p.Type,
+                        p.DataLength,
+                        p.DataPrecision,
+                        p.DataScale
+                    ),
+                    Description = ""
                 };
                 
-                var prevProp = refreshProperties.FirstOrDefault(p => p.Id == property.Id);
+                // 
+                var prevProp = refreshProperties.FirstOrDefault(p2 => p2.Id == property.Id);
                 if (prevProp == null)
                 {
                     refreshProperties.Add(property);
@@ -76,20 +86,75 @@ namespace PluginOracleNet.API.Discover
                 {
                     var index = refreshProperties.IndexOf(prevProp);
                     refreshProperties.RemoveAt(index);
-
+            
                     property.IsKey = prevProp.IsKey || property.IsKey;
                     refreshProperties.Add(property);
                 }
             }
-
+            
             // add properties
-            schema.Properties.Clear();
-            schema.Properties.AddRange(refreshProperties);
+            outputSchema.Properties.AddRange(refreshProperties);
 
-            await conn.CloseAsync();
 
-            // get sample and count
-            return await AddSampleAndCount(connFactory, schema, sampleSize);
+            return await AddSampleAndCount(connFactory, outputSchema, sampleSize);
+
+
+            // var decomposed = DecomposeSafeName(schema.Id).TrimEscape();
+            // var conn = connFactory.GetConnection();
+            //
+            // await conn.OpenAsync();
+            //
+            // var cmd = connFactory.GetCommand(
+            //     string.Format(GetTableAndColumnsQuery, decomposed.Schema, decomposed.Table), conn);
+            // var reader = await cmd.ExecuteReaderAsync();
+            // var refreshProperties = new List<Property>();
+            //
+            // while (await reader.ReadAsync())
+            // {
+            //     // add column to refreshProperties
+            //     var property = new Property
+            //     {
+            //         Id = Utility.Utility.GetSafeName(reader.GetValueById(ColumnName).ToString()),
+            //         Name = reader.GetValueById(ColumnName).ToString(),
+            //         IsKey = reader.GetValueById(ConstraintType).ToString() == "P",
+            //         IsNullable = reader.GetValueById(Nullable).ToString() == "Y",
+            //         Type = GetType(
+            //             reader.GetValueById(DataType).ToString(),
+            //             reader.GetValueById(DataLength),
+            //             reader.GetValueById(DataPrecision),
+            //             reader.GetValueById(DataScale)
+            //         ),
+            //         TypeAtSource = GetTypeAtSource(
+            //             reader.GetValueById(DataType).ToString(),
+            //             reader.GetValueById(DataLength),
+            //             reader.GetValueById(DataPrecision),
+            //             reader.GetValueById(DataScale)
+            //         )
+            //     };
+            //     
+            //     var prevProp = refreshProperties.FirstOrDefault(p => p.Id == property.Id);
+            //     if (prevProp == null)
+            //     {
+            //         refreshProperties.Add(property);
+            //     }
+            //     else
+            //     {
+            //         var index = refreshProperties.IndexOf(prevProp);
+            //         refreshProperties.RemoveAt(index);
+            //
+            //         property.IsKey = prevProp.IsKey || property.IsKey;
+            //         refreshProperties.Add(property);
+            //     }
+            // }
+            //
+            // // add properties
+            // schema.Properties.Clear();
+            // schema.Properties.AddRange(refreshProperties);
+            //
+            // await conn.CloseAsync();
+            //
+            // // get sample and count
+            // return await AddSampleAndCount(connFactory, schema, sampleSize);
         }
 
         private static DecomposeResponse DecomposeSafeName(string schemaId)

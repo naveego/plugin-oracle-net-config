@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace PluginOracleNet.API.Utility
+namespace PluginOracleNetConfig.API.Utility
 {
     public static class StringUtils
     {

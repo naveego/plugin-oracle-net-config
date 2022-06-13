@@ -4,14 +4,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Naveego.Sdk.Logging;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
-using PluginOracleNet.API.Utility;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.DataContracts;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

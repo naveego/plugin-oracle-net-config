@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using PluginOracleNet.Helper;
-using PluginOracleNet.DataContracts;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.DataContracts;
 using Newtonsoft.Json;
 using Naveego.Sdk.Plugins;
 using Xunit;
 using System.Threading.Tasks;
 using Grpc.Core;
 using System.Linq;
-using PluginOracleNet.DataContracts;
 using Record = Naveego.Sdk.Plugins.Record;
 
 namespace PluginOracleNetTest.Plugin
@@ -24,13 +23,16 @@ namespace PluginOracleNetTest.Plugin
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 11;
         
-        private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
-        private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
-        private static int TestSampleCount_2 = 0;
-        private static int TestPropertyCount_2 = 10;
+        // private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
+        // private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
+        // private static int TestSampleCount_2 = 0;
+        // private static int TestPropertyCount_2 = 10;
 
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
+
+        // TODO: (When testing) Specify file path to config.json
+        private static string TestConfigSchemaFilePath = "";
 
         private Settings GetSettings()
         {
@@ -44,7 +46,8 @@ namespace PluginOracleNetTest.Plugin
                 Port = "",
                 Password = "",
                 Username = "",
-                ServiceName = ""
+                ServiceName = "",
+                ConfigSchemaFilePath = TestConfigSchemaFilePath
                 //WalletPath = ""
             };
         }
@@ -264,7 +267,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -302,7 +305,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -334,7 +337,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
             };
             server.Start();
@@ -354,7 +357,8 @@ namespace PluginOracleNetTest.Plugin
                     Port = "1521",
                     Password = "mXNkJwXG839a",
                     Username = wrongUsername,
-                    ServiceName = "ORCLCDB.localdomain"
+                    ServiceName = "ORCLCDB.localdomain",
+                    ConfigSchemaFilePath = TestConfigSchemaFilePath
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
                 OauthStateJson = ""
@@ -381,7 +385,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -405,11 +409,11 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(15, response.Schemas.Count);
+            Assert.Equal(1, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             //var schema = response.Schemas[0];
-            var schema = response.Schemas[1]; // Use testing table
+            var schema = response.Schemas[0]; // Use testing table
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
@@ -425,23 +429,23 @@ namespace PluginOracleNetTest.Plugin
             Assert.False(property.IsKey);
             Assert.True(property.IsNullable);
             
-            // --- Detect Primary Key in last table ---
-            // Use the test schema
-            var schema2 = response.Schemas.Single(s => s.Id == TestSchemaID_2);
-
-            Assert.Equal(TestSchemaID_2, schema2.Id);
-            Assert.Equal(TestSchemaName_2, schema2.Name);
-            Assert.Equal($"", schema2.Query);
-            Assert.Equal(TestSampleCount_2, schema2.Sample.Count);
-            Assert.Equal(TestPropertyCount_2, schema2.Properties.Count);
-
-            var property2 = schema2.Properties[0];
-            Assert.Equal(TestPropertyID, property2.Id);
-            Assert.Equal(TestPropertyName, property2.Name);
-            Assert.Equal("", property2.Description);
-            Assert.Equal(PropertyType.String, property2.Type);
-            Assert.True(property2.IsKey);
-            Assert.False(property2.IsNullable);
+            // // --- Detect Primary Key in last table ---
+            // // Use the test schema
+            // var schema2 = response.Schemas.Single(s => s.Id == TestSchemaID_2);
+            //
+            // Assert.Equal(TestSchemaID_2, schema2.Id);
+            // Assert.Equal(TestSchemaName_2, schema2.Name);
+            // Assert.Equal($"", schema2.Query);
+            // Assert.Equal(TestSampleCount_2, schema2.Sample.Count);
+            // Assert.Equal(TestPropertyCount_2, schema2.Properties.Count);
+            //
+            // var property2 = schema2.Properties[0];
+            // Assert.Equal(TestPropertyID, property2.Id);
+            // Assert.Equal(TestPropertyName, property2.Name);
+            // Assert.Equal("", property2.Description);
+            // Assert.Equal(PropertyType.String, property2.Type);
+            // Assert.True(property2.IsKey);
+            // Assert.False(property2.IsNullable);
             
 
             // cleanup
@@ -455,7 +459,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -502,110 +506,110 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
+        // [Fact]
+        // public async Task DiscoverSchemasRefreshQueryTest()
+        // {
+        //     // setup
+        //     Server server = new Server
+        //     {
+        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
+        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
+        //     };
+        //     server.Start();
+        //
+        //     var port = server.Ports.First().BoundPort;
+        //
+        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+        //     var client = new Publisher.PublisherClient(channel);
+        //
+        //     var connectRequest = GetConnectSettings();
+        //
+        //     var request = new DiscoverSchemasRequest
+        //     {
+        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
+        //         SampleSize = 10,
+        //         ToRefresh = { GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}") }
+        //     };
+        //
+        //     // act
+        //     client.Connect(connectRequest);
+        //     var response = client.DiscoverSchemas(request);
+        //
+        //     // assert
+        //     Assert.IsType<DiscoverSchemasResponse>(response);
+        //     Assert.Single(response.Schemas);
+        //
+        //     var schema = response.Schemas[0];
+        //     Assert.Equal($"test", schema.Id);
+        //     Assert.Equal("test", schema.Name);
+        //     Assert.Equal($"SELECT * FROM {TestSchemaID}", schema.Query);
+        //     Assert.Equal(TestSampleCount, schema.Sample.Count);
+        //     Assert.Equal(TestPropertyCount, schema.Properties.Count);
+        //
+        //     var property = schema.Properties[0];
+        //     Assert.Equal(TestPropertyID, property.Id);
+        //     Assert.Equal(TestPropertyName, property.Name);
+        //     Assert.Equal("", property.Description);
+        //     Assert.Equal(PropertyType.String, property.Type);
+        //     Assert.False(property.IsKey);
+        //     Assert.True(property.IsNullable);
+        //
+        //     // cleanup
+        //     await channel.ShutdownAsync();
+        //     await server.ShutdownAsync();
+        // }
+        //
+        // [Fact]
+        // public async Task DiscoverSchemasRefreshQueryBadSyntaxTest()
+        // {
+        //     // setup
+        //     Server server = new Server
+        //     {
+        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
+        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
+        //     };
+        //     server.Start();
+        //
+        //     var port = server.Ports.First().BoundPort;
+        //
+        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+        //     var client = new Publisher.PublisherClient(channel);
+        //
+        //     var connectRequest = GetConnectSettings();
+        //
+        //     var request = new DiscoverSchemasRequest
+        //     {
+        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
+        //         SampleSize = 10,
+        //         ToRefresh = { GetTestSchema("bad syntax") }
+        //     };
+        //
+        //     // act
+        //     client.Connect(connectRequest);
+        //
+        //     try
+        //     {
+        //         var response = client.DiscoverSchemas(request);
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         // assert
+        //         Assert.IsType<RpcException>(e);
+        //         Assert.Contains("ORA-", e.Message);
+        //     }
+        //
+        //     // cleanup
+        //     await channel.ShutdownAsync();
+        //     await server.ShutdownAsync();
+        // }
+
         [Fact]
-        public async Task DiscoverSchemasRefreshQueryTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
-                Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-            };
-            server.Start();
-
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            var connectRequest = GetConnectSettings();
-
-            var request = new DiscoverSchemasRequest
-            {
-                Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-                SampleSize = 10,
-                ToRefresh = { GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}") }
-            };
-
-            // act
-            client.Connect(connectRequest);
-            var response = client.DiscoverSchemas(request);
-
-            // assert
-            Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Single(response.Schemas);
-
-            var schema = response.Schemas[0];
-            Assert.Equal($"test", schema.Id);
-            Assert.Equal("test", schema.Name);
-            Assert.Equal($"SELECT * FROM {TestSchemaID}", schema.Query);
-            Assert.Equal(TestSampleCount, schema.Sample.Count);
-            Assert.Equal(TestPropertyCount, schema.Properties.Count);
-
-            var property = schema.Properties[0];
-            Assert.Equal(TestPropertyID, property.Id);
-            Assert.Equal(TestPropertyName, property.Name);
-            Assert.Equal("", property.Description);
-            Assert.Equal(PropertyType.String, property.Type);
-            Assert.False(property.IsKey);
-            Assert.True(property.IsNullable);
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
-
-        [Fact]
-        public async Task DiscoverSchemasRefreshQueryBadSyntaxTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
-                Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-            };
-            server.Start();
-
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            var connectRequest = GetConnectSettings();
-
-            var request = new DiscoverSchemasRequest
-            {
-                Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-                SampleSize = 10,
-                ToRefresh = { GetTestSchema("bad syntax") }
-            };
-
-            // act
-            client.Connect(connectRequest);
-
-            try
-            {
-                var response = client.DiscoverSchemas(request);
-            }
-            catch (Exception e)
-            {
-                // assert
-                Assert.IsType<RpcException>(e);
-                Assert.Contains("ORA-", e.Message);
-            }
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
-
-                [Fact]
         public async Task ReadStreamTableSchemaTest()
         {
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -672,87 +676,87 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-                [Fact]
-        public async Task ReadStreamQuerySchemaTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
-                Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-            };
-            server.Start();
+        // [Fact]
+        // public async Task ReadStreamQuerySchemaTest()
+        // {
+        //     // setup
+        //     Server server = new Server
+        //     {
+        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
+        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
+        //     };
+        //     server.Start();
+        //
+        //     var port = server.Ports.First().BoundPort;
+        //
+        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+        //     var client = new Publisher.PublisherClient(channel);
+        //
+        //     //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"C##DEMO\".\"ACCOUNTARCHIVE\"");
+        //     var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
+        //     
+        //     var connectRequest = GetConnectSettings();
+        //
+        //     var schemaRequest = new DiscoverSchemasRequest
+        //     {
+        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
+        //         ToRefresh = { schema }
+        //     };
+        //
+        //     var request = new ReadRequest()
+        //     {
+        //         DataVersions = new DataVersions
+        //         {
+        //             JobId = "test"
+        //         },
+        //         JobId = "test",
+        //     };
+        //
+        //     // act
+        //     client.Connect(connectRequest);
+        //     var schemasResponse = client.DiscoverSchemas(schemaRequest);
+        //     request.Schema = schemasResponse.Schemas[0];
+        //
+        //     var response = client.ReadStream(request);
+        //     var responseStream = response.ResponseStream;
+        //     var records = new List<Naveego.Sdk.Plugins.Record>();
+        //
+        //     while (await responseStream.MoveNext())
+        //     {
+        //         records.Add(responseStream.Current);
+        //     }
+        //
+        //     // assert
+        //     Assert.Equal(421, records.Count);
+        //
+        //     var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
+        //     // Assert.Equal("3", record["\"CHANNEL_ID\""]);
+        //     // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
+        //     // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
+        //     // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
+        //     // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
+        //     // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
+        //     Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
+        //     Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
+        //     Assert.Equal("Stopher", record["\"LAST_NAME\""]);
+        //     Assert.Equal("Spokane", record["\"CITY\""]);
+        //     Assert.Equal("WA", record["\"STATE\""]);
+        //     Assert.Equal("8 Golden Leaf Drive", record["\"ADDRESS\""]);
+        //     Assert.Equal("99205", record["\"ZIP\""]);
+        //     Assert.Equal("Erica Smith", record["\"REP\""]);
+        //
+        //     // cleanup
+        //     await channel.ShutdownAsync();
+        //     await server.ShutdownAsync();
+        // }
 
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"C##DEMO\".\"ACCOUNTARCHIVE\"");
-            var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
-            
-            var connectRequest = GetConnectSettings();
-
-            var schemaRequest = new DiscoverSchemasRequest
-            {
-                Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-                ToRefresh = { schema }
-            };
-
-            var request = new ReadRequest()
-            {
-                DataVersions = new DataVersions
-                {
-                    JobId = "test"
-                },
-                JobId = "test",
-            };
-
-            // act
-            client.Connect(connectRequest);
-            var schemasResponse = client.DiscoverSchemas(schemaRequest);
-            request.Schema = schemasResponse.Schemas[0];
-
-            var response = client.ReadStream(request);
-            var responseStream = response.ResponseStream;
-            var records = new List<Naveego.Sdk.Plugins.Record>();
-
-            while (await responseStream.MoveNext())
-            {
-                records.Add(responseStream.Current);
-            }
-
-            // assert
-            Assert.Equal(421, records.Count);
-
-            var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
-            Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
-            Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
-            Assert.Equal("Stopher", record["\"LAST_NAME\""]);
-            Assert.Equal("Spokane", record["\"CITY\""]);
-            Assert.Equal("WA", record["\"STATE\""]);
-            Assert.Equal("8 Golden Leaf Drive", record["\"ADDRESS\""]);
-            Assert.Equal("99205", record["\"ZIP\""]);
-            Assert.Equal("Erica Smith", record["\"REP\""]);
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
-
-                [Fact]
+        [Fact]
         public async Task ReadStreamLimitTest()
         {
             // setup
             Server server = new Server
             {
-                Services = { Publisher.BindService(new PluginOracleNet.Plugin.Plugin()) },
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
                 Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
             };
             server.Start();
@@ -762,7 +766,7 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
+            var schema = GetTestSchema(TestSchemaID, TestSchemaName, $"SELECT * FROM {TestSchemaID}");
 
             var connectRequest = GetConnectSettings();
 
@@ -810,7 +814,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
             };
             server.Start();
@@ -862,7 +866,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
             };
             server.Start();
@@ -965,7 +969,7 @@ namespace PluginOracleNetTest.Plugin
             // setup
             Server server = new Server
             {
-                Services = {Publisher.BindService(new PluginOracleNet.Plugin.Plugin())},
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
             };
             server.Start();

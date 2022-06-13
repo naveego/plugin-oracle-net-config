@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 // --- Sourced from MySQL Plugin version 1.5.2 ---
 
-namespace PluginOracleNet.API.Write
+namespace PluginOracleNetConfig.API.Write
 {
     public static partial class Write
     {

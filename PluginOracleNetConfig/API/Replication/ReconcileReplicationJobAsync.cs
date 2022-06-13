@@ -5,14 +5,14 @@ using Microsoft.VisualBasic;
 using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
-using Constants = PluginOracleNet.API.Utility.Constants;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.DataContracts;
+using Constants = PluginOracleNetConfig.API.Utility.Constants;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

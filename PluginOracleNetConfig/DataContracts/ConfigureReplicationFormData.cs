@@ -1,4 +1,4 @@
-namespace PluginOracleNet.DataContracts
+namespace PluginOracleNetConfig.DataContracts
 {
     public class ConfigureReplicationFormData
     {

@@ -9,12 +9,12 @@ using Grpc.Core;
 using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.API.Utility;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.DataContracts;
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

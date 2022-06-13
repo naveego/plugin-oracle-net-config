@@ -1,7 +1,7 @@
 using System;
 using Naveego.Sdk.Plugins;
 
-namespace PluginOracleNet.DataContracts
+namespace PluginOracleNetConfig.DataContracts
 {
     public class ReplicationMetaData
     {

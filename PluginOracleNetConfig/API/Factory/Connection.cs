@@ -1,9 +1,9 @@
 using System.Data;
 using System.Threading.Tasks;
 using Oracle.ManagedDataAccess.Client;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public class Connection : IConnection
     {

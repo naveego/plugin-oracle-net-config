@@ -1,7 +1,7 @@
 using System.Data;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public interface IConnectionFactory
     {

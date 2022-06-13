@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
-using PluginOracleNet.API.Factory;
+using PluginOracleNetConfig.API.Factory;
 
-namespace PluginOracleNet.API.Discover
+namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {

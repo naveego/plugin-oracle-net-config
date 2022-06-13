@@ -1,7 +1,7 @@
 using System.Data;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public class ConnectionFactory : IConnectionFactory
     {
@@ -16,7 +16,7 @@ namespace PluginOracleNet.API.Factory
         {
             return new Connection(_settings);
         }
-        
+
         public ICommand GetCommand(string commandText, IConnection connection)
         {
             return new Command(commandText, connection);

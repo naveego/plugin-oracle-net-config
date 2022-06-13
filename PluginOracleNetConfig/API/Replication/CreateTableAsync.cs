@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.DataContracts;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.DataContracts;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

@@ -1,6 +1,6 @@
-using PluginOracleNet.API.Utility;
+using PluginOracleNetConfig.API.Utility;
 
-namespace PluginOracleNet.DataContracts
+namespace PluginOracleNetConfig.DataContracts
 {
     public class WriteStoredProcedure
     {

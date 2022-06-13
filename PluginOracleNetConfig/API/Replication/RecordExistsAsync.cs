@@ -1,12 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.API.Utility;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.DataContracts;
 
 // --- Sourced from Firebird Plugin version 1.0.0-beta ---
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

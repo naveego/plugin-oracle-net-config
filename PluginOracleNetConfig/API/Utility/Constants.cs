@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using PluginOracleNet.DataContracts;
+using PluginOracleNetConfig.DataContracts;
 
-namespace PluginOracleNet.API.Utility
+namespace PluginOracleNetConfig.API.Utility
 {
     public static class Constants
     {

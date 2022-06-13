@@ -2,7 +2,7 @@ using System;
 using System.Data;
 using Naveego.Sdk.Plugins;
 
-namespace PluginOracleNet.API.Discover
+namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {

@@ -1,4 +1,4 @@
-namespace PluginOracleNet.API.Utility
+namespace PluginOracleNetConfig.API.Utility
 {
     public static partial class Utility
     {

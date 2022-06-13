@@ -1,8 +1,8 @@
 ﻿using Naveego.Sdk.Plugins;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.API.Utility;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.DataContracts;
 
-namespace PluginOracleNet.API.Replication
+namespace PluginOracleNetConfig.API.Replication
 {
     public static partial class Replication
     {

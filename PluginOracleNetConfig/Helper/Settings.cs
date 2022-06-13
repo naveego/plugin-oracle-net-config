@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using PluginOracleNetConfig.API.Utility;
 
-namespace PluginOracleNet.Helper
+namespace PluginOracleNetConfig.Helper
 {
     public class Settings
     {
@@ -10,6 +11,11 @@ namespace PluginOracleNet.Helper
         public string Username { get; set; }
         public string Password { get; set; }
         public string ServiceName { get; set; }
+        
+        /// <summary>
+        /// The configuration file that defines schemas
+        /// </summary>
+        public string ConfigSchemaFilePath { get; set; }
 
         /// <summary>
         /// Validates the settings input object
@@ -42,6 +48,12 @@ namespace PluginOracleNet.Helper
                 throw new Exception("The Port property must be set");
             }
 
+            if (string.IsNullOrEmpty(ConfigSchemaFilePath))
+            {
+                throw new Exception("The ConfigSchemaFilePath property must be set");
+            }
+
+            Utility.ReadSchemaConfigsFromJson(ConfigSchemaFilePath);
         }
 
         /// <summary>

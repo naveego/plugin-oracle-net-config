@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public interface ICommand
     {

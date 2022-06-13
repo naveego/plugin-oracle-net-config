@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
-using PluginOracleNet.DataContracts;
+using PluginOracleNetConfig.DataContracts;
 
 // --- Sourced from MySQL Plugin version 1.5.2 ---
 
-namespace PluginOracleNet.API.Write
+namespace PluginOracleNetConfig.API.Write
 {
     public static partial class Write
     {

@@ -7,15 +7,15 @@ using Grpc.Core;
 using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Discover;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.API.Read;
-using PluginOracleNet.API.Replication;
-using PluginOracleNet.API.Write;
-using PluginOracleNet.DataContracts;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.API.Discover;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.API.Read;
+using PluginOracleNetConfig.API.Replication;
+using PluginOracleNetConfig.API.Write;
+using PluginOracleNetConfig.DataContracts;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.Plugin
+namespace PluginOracleNetConfig.Plugin
 {
     public class Plugin : Publisher.PublisherBase
     {
@@ -23,6 +23,9 @@ namespace PluginOracleNet.Plugin
         private TaskCompletionSource<bool> _tcs;
         private IConnectionFactory _connectionFactory;
         private ConfigureReplicationFormData _replicationConfig;
+        
+        // store config schemas imported from files inside a list
+        private List<ConfigSchema> _impotedSchemas;
 
         public Plugin(IConnectionFactory connectionFactory = null)
         {
@@ -170,7 +173,6 @@ namespace PluginOracleNet.Plugin
 
 
         /// <summary>
-        /// Discovers schemas located in the users Zoho CRM instance
         /// </summary>
         /// <param name="request"></param>
         /// <param name="context"></param>
@@ -191,7 +193,7 @@ namespace PluginOracleNet.Plugin
                 // get all schemas
                 try
                 {
-                    var schemas = Discover.GetAllSchemas(_connectionFactory, sampleSize);
+                    var schemas = Discover.GetAllSchemas(_connectionFactory, _server.Settings, sampleSize);
 
                     discoverSchemasResponse.Schemas.AddRange(await schemas.ToListAsync());
 
@@ -212,7 +214,7 @@ namespace PluginOracleNet.Plugin
 
                 Logger.Info($"Refresh schemas attempted: {refreshSchemas.Count}");
 
-                var schemas = Discover.GetRefreshSchemas(_connectionFactory, refreshSchemas, sampleSize);
+                var schemas = Discover.GetRefreshSchemas(_connectionFactory, _server.Settings, refreshSchemas, sampleSize);
 
                 discoverSchemasResponse.Schemas.AddRange(await schemas.ToListAsync());
 
@@ -493,8 +495,8 @@ namespace PluginOracleNet.Plugin
                         // send record to source system
                         // add await for unit testing 
                         // removed to allow multiple to run at the same time
-                        /*await*/ Task.Run(async () =>
-                                await Write.WriteRecordAsync(_connectionFactory, schema, record, responseStream),
+                        /*await*/ Task.Run(
+                            async () => await Write.WriteRecordAsync(_connectionFactory, schema, record, responseStream),
                             context.CancellationToken);
                     }
                 }

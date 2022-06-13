@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace PluginOracleNet.DataContracts
+namespace PluginOracleNetConfig.DataContracts
 {
     public class ReplicationTable
     {

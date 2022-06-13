@@ -2,7 +2,7 @@ using System.Data;
 using System.Threading.Tasks;
 using Oracle.ManagedDataAccess.Client;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public class Reader : IReader
     {

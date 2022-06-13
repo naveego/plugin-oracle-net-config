@@ -3,9 +3,12 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
-using PluginOracleNet.API.Factory;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.API.Utility;
+using PluginOracleNetConfig.DataContracts;
+using PluginOracleNetConfig.Helper;
 
-namespace PluginOracleNet.API.Discover
+namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {
@@ -19,106 +22,155 @@ namespace PluginOracleNet.API.Discover
         private const string Nullable = "NULLABLE";
         private const string ConstraintType = "CONSTRAINT_TYPE";
 
-        private const string GetAllTablesAndColumnsQuery = @"
-SELECT 
-	t.OWNER, 
-    t.TABLE_NAME,
-    c.COLUMN_NAME,
-    c.DATA_TYPE,
-    c.DATA_LENGTH,
-    c.DATA_PRECISION,
-    c.DATA_SCALE,
-    c.NULLABLE,
-    CASE
-        WHEN tc.CONSTRAINT_TYPE = 'P'
-            THEN 'P'
-        ELSE NULL
-    END CONSTRAINT_TYPE
-FROM ALL_TABLES t
-INNER JOIN ALL_TAB_COLUMNS c ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
-LEFT OUTER JOIN all_cons_columns ccu ON ccu.COLUMN_NAME = c.COLUMN_NAME AND ccu.TABLE_NAME = t.TABLE_NAME AND ccu.OWNER = t.OWNER
-LEFT OUTER JOIN SYS.ALL_CONSTRAINTS tc ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME AND tc.OWNER = ccu.OWNER
-WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY t.TABLE_NAME, c.COLUMN_ID";
+//         private const string GetAllTablesAndColumnsQuery = @"
+// SELECT 
+// 	t.OWNER, 
+//     t.TABLE_NAME,
+//     c.COLUMN_NAME,
+//     c.DATA_TYPE,
+//     c.DATA_LENGTH,
+//     c.DATA_PRECISION,
+//     c.DATA_SCALE,
+//     c.NULLABLE,
+//     CASE
+//         WHEN tc.CONSTRAINT_TYPE = 'P'
+//             THEN 'P'
+//         ELSE NULL
+//     END CONSTRAINT_TYPE
+// FROM ALL_TABLES t
+// INNER JOIN ALL_TAB_COLUMNS c ON c.OWNER = t.OWNER AND c.TABLE_NAME = t.TABLE_NAME
+// LEFT OUTER JOIN all_cons_columns ccu ON ccu.COLUMN_NAME = c.COLUMN_NAME AND ccu.TABLE_NAME = t.TABLE_NAME AND ccu.OWNER = t.OWNER
+// LEFT OUTER JOIN SYS.ALL_CONSTRAINTS tc ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME AND tc.OWNER = ccu.OWNER
+// WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY t.TABLE_NAME, c.COLUMN_ID";
 
 
-        public static async IAsyncEnumerable<Schema> GetAllSchemas(IConnectionFactory connFactory, int sampleSize = 5)
+        public static async IAsyncEnumerable<Schema> GetAllSchemas(IConnectionFactory connFactory, Settings settings, int sampleSize = 5)
         {
-            var conn = connFactory.GetConnection();
-            await conn.OpenAsync();
+            // get the config list
+            List<ConfigSchema> configSchemaObject = new List<ConfigSchema>();
+            List<Schema> resultSchemas = new List<Schema>();
 
-            var cmd = connFactory.GetCommand(GetAllTablesAndColumnsQuery, conn);
-            var reader = await cmd.ExecuteReaderAsync();
-
-            Schema schema = null;
-            var currentSchemaId = "";
-            while (await reader.ReadAsync())
+            if (settings != null)
             {
-                var schemaId =
-                    $"{Utility.Utility.GetSafeName(reader.GetValueById(Owner).ToString())}.{Utility.Utility.GetSafeName(reader.GetValueById(TableName).ToString())}";
-                if (schemaId != currentSchemaId)
-                {
-                    // return previous schema
-                    if (schema != null)
-                    {
-                        // get sample and count
-                        yield return await AddSampleAndCount(connFactory, schema, sampleSize);
-                    }
+                configSchemaObject = Utility.Utility.ReadSchemaConfigsFromJson(settings.ConfigSchemaFilePath);
+            }
 
-                    // start new schema
-                    currentSchemaId = schemaId;
-                    var parts = DecomposeSafeName(currentSchemaId).TrimEscape();
-                    schema = new Schema
-                    {
-                        Id = currentSchemaId,
-                        Name = $"{parts.Schema}.{parts.Table}",
-                        Properties = { },
-                        DataFlowDirection = Schema.Types.DataFlowDirection.Read
-                    };
-                }
-
-                // add column to schema
-                var property = new Property
+            // loop over each config list item
+            foreach (var cso in configSchemaObject)
+            {
+                // convert each config schema object into a schema
+                var resultSchema = new Schema()
                 {
-                    Id = Utility.Utility.GetSafeName(reader.GetValueById(ColumnName).ToString()),
-                    Name = reader.GetValueById(ColumnName).ToString(),
-                    IsKey = reader.GetValueById(ConstraintType).ToString() == "P",
-                    IsNullable = reader.GetValueById(Nullable).ToString() == "Y",
-                    Type = GetType(
-                        reader.GetValueById(DataType).ToString(),
-                        reader.GetValueById(DataLength),
-                        reader.GetValueById(DataPrecision),
-                        reader.GetValueById(DataScale)
-                    ),
-                    TypeAtSource = GetTypeAtSource(
-                        reader.GetValueById(DataType).ToString(),
-                        reader.GetValueById(DataLength),
-                        reader.GetValueById(DataPrecision),
-                        reader.GetValueById(DataScale)
-                    )
+                    Id = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
+                    //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
+                    Query = "",
+                    DataFlowDirection = GetDataFlowDirection(cso.DataFlowDirection),
+                    Description = "",
+                    Name = $"{settings.Username.ToAllCaps()}.{cso.Id}"
                 };
-
-                var prevProp = schema?.Properties.FirstOrDefault(p => p.Id == property.Id);
-                if (prevProp == null)
+                
+                // map each property in config schema into result schema
+                resultSchema.Properties.Add(cso.Properties.ConvertAll(p => new Property
                 {
-                    schema?.Properties.Add(property);
-                }
-                else
-                {
-                    var index = schema.Properties.IndexOf(prevProp);
-                    schema.Properties.RemoveAt(index);
+                    Id = Utility.Utility.GetSafeName(p.Id),
+                    Name = p.Id,
+                    Type = GetType(p.Type),
+                    TypeAtSource = GetTypeAtSource(p.Type, p.DataLength, p.DataPrecision, p.DataScale),
+                    Description = "",
+                    IsKey = p.IsKey,
+                    IsNullable = p.IsNullable
+                }));
 
-                    property.IsKey = prevProp.IsKey || property.IsKey;
-                    schema.Properties.Add(property);
-                }
+                // return a schema for each config list item
+                resultSchemas.Add(resultSchema);
             }
 
-            await conn.CloseAsync();
-
-            if (schema != null)
+            foreach (var rs in resultSchemas)
             {
-                // get sample and count
-                yield return await AddSampleAndCount(connFactory, schema, sampleSize);
+                if (rs != null)
+                {
+                    yield return await AddSampleAndCount(connFactory, rs, sampleSize);
+                }
             }
+
+            // // Old Discover All method
+            // var conn = connFactory.GetConnection();
+            // await conn.OpenAsync();
+            //
+            // var customQuery = importSchema.Query;
+            // var cmd = connFactory.GetCommand(customQuery, conn);
+            // var reader = await cmd.ExecuteReaderAsync();
+            //
+            // Schema schema = null;
+            // var currentSchemaId = "";
+            // while (await reader.ReadAsync())
+            // {
+            //     var schemaId =
+            //         $"{Utility.Utility.GetSafeName(reader.GetValueById(Owner).ToString())}.{Utility.Utility.GetSafeName(reader.GetValueById(TableName).ToString())}";
+            //     if (schemaId != currentSchemaId)
+            //     {
+            //         // return previous schema
+            //         if (schema != null)
+            //         {
+            //             // get sample and count
+            //             yield return await AddSampleAndCount(connFactory, schema, sampleSize);
+            //         }
+            //
+            //         // start new schema
+            //         currentSchemaId = schemaId;
+            //         var parts = DecomposeSafeName(currentSchemaId).TrimEscape();
+            //         schema = new Schema
+            //         {
+            //             Id = currentSchemaId,
+            //             Name = $"{parts.Schema}.{parts.Table}",
+            //             Properties = { },
+            //             DataFlowDirection = Schema.Types.DataFlowDirection.Read
+            //         };
+            //     }
+            //
+            //     // add column to schema
+            //     var property = new Property
+            //     {
+            //         Id = Utility.Utility.GetSafeName(reader.GetValueById(ColumnName).ToString()),
+            //         Name = reader.GetValueById(ColumnName).ToString(),
+            //         IsKey = reader.GetValueById(ConstraintType).ToString() == "P",
+            //         IsNullable = reader.GetValueById(Nullable).ToString() == "Y",
+            //         Type = GetType(
+            //             reader.GetValueById(DataType).ToString(),
+            //             reader.GetValueById(DataLength),
+            //             reader.GetValueById(DataPrecision),
+            //             reader.GetValueById(DataScale)
+            //         ),
+            //         TypeAtSource = GetTypeAtSource(
+            //             reader.GetValueById(DataType).ToString(),
+            //             reader.GetValueById(DataLength),
+            //             reader.GetValueById(DataPrecision),
+            //             reader.GetValueById(DataScale)
+            //         )
+            //     };
+            //
+            //     var prevProp = schema?.Properties.FirstOrDefault(p => p.Id == property.Id);
+            //     if (prevProp == null)
+            //     {
+            //         schema?.Properties.Add(property);
+            //     }
+            //     else
+            //     {
+            //         var index = schema.Properties.IndexOf(prevProp);
+            //         schema.Properties.RemoveAt(index);
+            //
+            //         property.IsKey = prevProp.IsKey || property.IsKey;
+            //         schema.Properties.Add(property);
+            //     }
+            // }
+            //
+            // await conn.CloseAsync();
+            //
+            // if (schema != null)
+            // {
+            //     // get sample and count
+            //     yield return await AddSampleAndCount(connFactory, schema, sampleSize);
+            // }
         }
 
         private static async Task<Schema> AddSampleAndCount(IConnectionFactory connFactory, Schema schema,
@@ -132,12 +184,12 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
             return schema;
         }
 
-        public static PropertyType GetType(string dataType)
-        {
-            return GetType(dataType, null, DBNull.Value, DBNull.Value);
-        }
+        // public static PropertyType GetType(string dataType)
+        // {
+        //     return GetType(dataType, null, null, null);
+        // }
         
-        public static PropertyType GetType(string dataType, object dataLength, object dataPrecision, object dataScale)
+        public static PropertyType GetType(string dataType, object dataLength = null, object dataPrecision = null, object dataScale = null)
         {
             switch (dataType)
             {
@@ -147,11 +199,11 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
                 case "TIME":
                     return PropertyType.Time;
                 case "NUMBER":
-                    if ((dataScale != DBNull.Value || dataScale == null) && (dataPrecision != DBNull.Value || dataPrecision == null))
+                    if (dataScale != null && dataPrecision != null)
                     {
-                        if ((decimal)dataScale == 0 || (decimal)dataScale == -127)
+                        if ((int)dataScale == 0 || (int)dataScale == -127)
                         {
-                            if ((decimal)dataPrecision <= 16)
+                            if ((int)dataPrecision <= 16)
                             {
                                 return PropertyType.Integer;
                             }
@@ -184,7 +236,7 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
                 case "NVARCHAR2":
                     if (dataLength != null)
                     {
-                        if ((decimal)dataLength >= 1024)
+                        if ((int)dataLength >= 1024)
                         {
                             return PropertyType.Text;
                         }
@@ -195,6 +247,33 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
             }
         }
 
+        // public static PropertyType GetTypeFromSchema(string dataType)
+        // {
+        //     switch (dataType.ToLower())
+        //     {
+        //         case "datetime":
+        //             return PropertyType.Datetime;
+        //         case "time":
+        //             return PropertyType.Time;
+        //         case "integer":
+        //             return PropertyType.Integer;
+        //         case "decimal":
+        //             return PropertyType.Decimal;
+        //         case "float":
+        //             return PropertyType.Float;
+        //         case "bool":
+        //             return PropertyType.Bool;
+        //         case "blob":
+        //             return PropertyType.Blob;
+        //         case "xml":
+        //             return PropertyType.Xml;
+        //         case "text":
+        //             return PropertyType.Text;
+        //         default:
+        //             return PropertyType.String;
+        //     }
+        // }
+        
         private static string GetTypeAtSource(string dataType, object dataLength, object dataPrecision, object dataScale)
         {
             switch (dataType)
@@ -217,6 +296,19 @@ WHERE TABLESPACE_NAME NOT IN ('SYSTEM', 'SYSAUX', 'TEMP', 'DBFS_DATA') ORDER BY 
             }
 
             return dataType;
+        }
+
+        public static Schema.Types.DataFlowDirection GetDataFlowDirection(string direction)
+        {
+            switch (direction)
+            {
+                case var t when t.Contains("write") && t.Contains("read"):
+                    return Schema.Types.DataFlowDirection.ReadWrite;
+                case var t when t.Contains("write"):
+                    return Schema.Types.DataFlowDirection.Write;
+                default:
+                    return Schema.Types.DataFlowDirection.Read;
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 using Oracle.ManagedDataAccess.Client;
 
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public class Transaction : ITransaction
     {

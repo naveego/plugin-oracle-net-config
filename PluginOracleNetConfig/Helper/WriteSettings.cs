@@ -1,6 +1,6 @@
 using Naveego.Sdk.Plugins;
 
-namespace PluginOracleNet.Helper
+namespace PluginOracleNetConfig.Helper
 {
     public class WriteSettings
     {

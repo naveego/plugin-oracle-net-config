@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.API.Factory;
 
-namespace PluginOracleNet.API.Read
+namespace PluginOracleNetConfig.API.Read
 {
     public static partial class Read
     {

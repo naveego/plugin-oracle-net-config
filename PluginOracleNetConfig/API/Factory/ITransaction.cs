@@ -1,4 +1,4 @@
-namespace PluginOracleNet.API.Factory
+namespace PluginOracleNetConfig.API.Factory
 {
     public interface ITransaction
     {

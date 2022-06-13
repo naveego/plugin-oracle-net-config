@@ -8,12 +8,12 @@ using Grpc.Core;
 using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.Helper;
+using PluginOracleNetConfig.Helper;
+using PluginOracleNetConfig.API.Factory;
 
 // --- Sourced from MySQL Plugin version 1.5.2 ---
 
-namespace PluginOracleNet.API.Write
+namespace PluginOracleNetConfig.API.Write
 {
     public static partial class Write
     {

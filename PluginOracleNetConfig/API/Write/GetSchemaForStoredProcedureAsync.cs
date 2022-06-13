@@ -1,12 +1,12 @@
 using System.Drawing;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
-using PluginOracleNet.API.Factory;
-using PluginOracleNet.DataContracts;
+using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.DataContracts;
 
 // --- Sourced from MySQL Plugin version 1.5.2 ---
 
-namespace PluginOracleNet.API.Write
+namespace PluginOracleNetConfig.API.Write
 {
     public static partial class Write
     {
