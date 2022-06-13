@@ -13,12 +13,12 @@
   "accessGroups": [],
   "canConfigure": true,
   "canProduceMultipleSchemas": true,
-  "canAcceptQueryBasedSchemas": true,
+  "canAcceptQueryBasedSchemas": false,
   "canUseOAuth": false,
-  "canConfigureWrite": true,
-  "canWrite": true,
-  "canConfigureReplication": true,
-  "canWriteReplication": true,
+  "canConfigureWrite": false,
+  "canWrite": false,
+  "canConfigureReplication": false,
+  "canWriteReplication": false,
   "querySchema": {
     "ui": {
       "ui:widget": "code",
