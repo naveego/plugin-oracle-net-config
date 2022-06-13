@@ -1,12 +1,12 @@
 {
   "id": "plugin-oracle-net",
-  "displayName": "Oracle .NET",
+  "displayName": "Oracle .NET Config",
   "description": "Publisher which connects to Oracle using .NET Framework",
   "apiVersion": "2",
   "versionDescription": "Version 1",
   "version": "1.0.0-beta",
   "iconFile": "icon.png",
-  "executable": "PluginOracleNet",
+  "executable": "PluginOracleNetConfig",
   "kind": "publisher",
   "os": "$GOOS",
   "arch": "$GOARCH",
@@ -69,12 +69,12 @@
         },
         "ServiceName": {
           "type": "string",
-          "title": "ServiceName",
+          "title": "Service Name",
           "description": "The service name within the Oracle Server"
         },
         "ConfigSchemaFilePath": {
           "type": "string",
-          "title": "ConfigSchemaFilePath",
+          "title": "Config Schema File Path",
           "description": "The path to the configuration schema file on local computer"
         }
       },
