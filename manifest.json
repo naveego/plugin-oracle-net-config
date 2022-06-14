@@ -46,6 +46,7 @@
     },
     "schema": {
       "type": "object",
+      "description": "Custom query discovery, outputs, and replications are disabled on the configuration version of the Oracle plugin.",
       "properties": {
         "Hostname": {
           "type": "string",
