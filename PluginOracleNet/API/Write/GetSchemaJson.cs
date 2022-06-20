@@ -22,7 +22,7 @@ namespace PluginOracleNet.API.Write
                         {"type", "string"},
                         {"title", "Stored Procedure"},
                         {"description", "Stored Procedure to call"},
-                        {"enum", storedProcedures.Select(s => s.GetName())}
+                        {"enum", storedProcedures.Select(s => $"{s.ProcedureName}")}
                     }},
                     // {"StoredProcedure", new Dictionary<string, object>
                     // {
