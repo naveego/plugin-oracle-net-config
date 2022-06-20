@@ -11,6 +11,7 @@ using PluginOracleNet.API.Discover;
 using PluginOracleNet.API.Factory;
 using PluginOracleNet.API.Read;
 using PluginOracleNet.API.Replication;
+using PluginOracleNet.API.Utility;
 using PluginOracleNet.API.Write;
 using PluginOracleNet.DataContracts;
 using PluginOracleNet.Helper;
@@ -283,7 +284,7 @@ namespace PluginOracleNet.Plugin
 
             var storedProcedures = await Write.GetAllStoredProceduresAsync(_connectionFactory);
 
-            var schemaJson = Write.GetSchemaJson();
+            var schemaJson = Write.GetSchemaJson(storedProcedures);
             var uiJson = Write.GetUIJson();
 
             // if first call 
@@ -308,7 +309,7 @@ namespace PluginOracleNet.Plugin
             {
                 // get form data
                 var formData = JsonConvert.DeserializeObject<ConfigureWriteFormData>(request.Form.DataJson);
-                var storedProcedure = storedProcedures.Find(s => s.GetName() == formData?.StoredProcedure);
+                var storedProcedure = storedProcedures.Find(s => s.GetName() == Utility.GetSafeName(formData?.StoredProcedure));
 
                 // base schema to return
                 var schema = await Write.GetSchemaForStoredProcedureAsync(_connectionFactory, storedProcedure);
@@ -484,7 +485,8 @@ namespace PluginOracleNet.Plugin
                         // send record to source system
                         // add await for unit testing 
                         // removed to allow multiple to run at the same time
-                        /*await*/ Task.Run(
+                        //await
+                            Task.Run(
                             async () => await Replication.WriteRecordAsync(_connectionFactory, schema, record, config,
                                 responseStream), context.CancellationToken);
                     }
@@ -493,7 +495,8 @@ namespace PluginOracleNet.Plugin
                         // send record to source system
                         // add await for unit testing 
                         // removed to allow multiple to run at the same time
-                        /*await*/ Task.Run(async () =>
+                        //await
+                            Task.Run(async () =>
                                 await Write.WriteRecordAsync(_connectionFactory, schema, record, responseStream),
                             context.CancellationToken);
                     }

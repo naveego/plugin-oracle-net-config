@@ -13,9 +13,14 @@ namespace PluginOracleNet.DataContracts
             return $"{Utility.GetSafeName(SchemaName.ToAllCaps())}.{Utility.GetSafeName(ProcedureId)}";
         }
         
-        public string GetName()
+        public string GetFullName()
         {
             return $"{Utility.GetSafeName(SchemaName.ToAllCaps())}.{Utility.GetSafeName(ProcedureName)}";
+        }
+        
+        public string GetName()
+        {
+            return Utility.GetSafeName(ProcedureName);
         }
     }
 }

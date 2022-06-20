@@ -48,11 +48,11 @@ ORDER BY ORDINAL_POSITION ASC";*/
         {
             var schema = new Schema
             {
-                Id = storedProcedure.GetName(),
+                Id = $"{storedProcedure.GetFullName()}",
                 Name = storedProcedure.GetName(),
                 Description = "",
                 DataFlowDirection = Schema.Types.DataFlowDirection.Write,
-                Query = storedProcedure.GetName()
+                Query = $"{storedProcedure.GetFullName()}"
             };
 
             var conn = connFactory.GetConnection();

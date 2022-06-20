@@ -25,8 +25,10 @@ where pr.owner not in ('ANONYMOUS','CTXSYS','DBSNMP','EXFSYS',
           'WK_TEST', 'WKSYS', 'WKPROXY','WMSYS','XDB','APEX_040000',
           'APEX_PUBLIC_USER','DIP', 'FLOWS_30000','FLOWS_FILES','MDDATA',
           'ORACLE_OCM', 'XS$NULL', 'SPATIAL_CSW_ADMIN_USR', 'LBACSYS',
-          'SPATIAL_WFS_ADMIN_USR', 'PUBLIC', 'APEX_040200')
+          'SPATIAL_WFS_ADMIN_USR', 'PUBLIC', 'APEX_040200', 'DVSYS',
+            'REMOTE_SCHEDULER_AGENT', 'GSMADMIN_INTERNAL')
         and object_type = 'PROCEDURE'
+        and SUBSTR(pr.owner, 0, 5) <> 'APEX_'
 order by ""{ColSchemaName}"",
         ""{ColProcedureName}""
 ";
