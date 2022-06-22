@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using PluginOracleNetConfig.DataContracts;
 
@@ -9,26 +10,26 @@ namespace PluginOracleNetConfig.API.Write
 {
     public static partial class Write
     {
-        public static string GetSchemaJson()
+        public static string GetSchemaJson(List<WriteStoredProcedure> storedProcedures)
         {
             var schemaJsonObj = new Dictionary<string, object>
             {
                 {"type", "object"},
                 {"properties", new Dictionary<string, object>
                 {
-                    // {"StoredProcedure", new Dictionary<string, object>
-                    // {
-                    //     {"type", "string"},
-                    //     {"title", "Stored Procedure"},
-                    //     {"description", "Stored Procedure to call"},
-                    //     {"enum", storedProcedures.Select(s => s.GetId())}
-                    // }},
                     {"StoredProcedure", new Dictionary<string, object>
                     {
                         {"type", "string"},
                         {"title", "Stored Procedure"},
                         {"description", "Stored Procedure to call"},
+                        {"enum", storedProcedures.Select(s => $"{s.ProcedureName}")}
                     }},
+                    // {"StoredProcedure", new Dictionary<string, object>
+                    // {
+                    //     {"type", "string"},
+                    //     {"title", "Stored Procedure"},
+                    //     {"description", "Stored Procedure to call"},
+                    // }},
                     {"GoldenRecordIdParam", new Dictionary<string, object>
                     {
                         {"type", "string"},
