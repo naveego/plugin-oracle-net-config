@@ -409,7 +409,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(1, response.Schemas.Count);
+            Assert.Equal(18, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             //var schema = response.Schemas[0];
@@ -884,7 +884,7 @@ namespace PluginOracleNetTest.Plugin
                 {
                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
                     {
-                        StoredProcedure = "\"C##DEMO\".\"UpsertIntoAccountArchive_GHTesting\""
+                        StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
                     })
                 }
             };
