@@ -18,10 +18,11 @@ namespace PluginOracleNetTest.Plugin
     {
         // Test Variables
 
-        private static string TestSchemaID = "\"C##DEMO\".\"ACCOUNTARCHIVE_GHTesting\"";
-        private static string TestSchemaName = "C##DEMO.ACCOUNTARCHIVE_GHTesting";
+        private static string TestSchemaID = "Query1";
+        private static string TestSchemaName = "Query1";
+        private static string TestQuery = "";
         private static int TestSampleCount = 10;
-        private static int TestPropertyCount = 11;
+        private static int TestPropertyCount = 3;
         
         // private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
         // private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
@@ -356,7 +357,7 @@ namespace PluginOracleNetTest.Plugin
                     Hostname = "",
                     Port = "",
                     Password = "",
-                    Username = wrongUsername,
+                    Username = "",
                     ServiceName = "",
                     ConfigSchemaFilePath = TestConfigSchemaFilePath
                 }),
@@ -409,7 +410,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<DiscoverSchemasResponse>(response);
-            Assert.Equal(18, response.Schemas.Count);
+            Assert.Equal(2, response.Schemas.Count);
 
             // --- Detect First Column in testing table ---
             //var schema = response.Schemas[0];
@@ -417,7 +418,7 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal(TestQuery, schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -454,7 +455,7 @@ namespace PluginOracleNetTest.Plugin
         }
 
         [Fact]
-        public async Task DiscoverSchemasRefreshTableTest()
+        public async Task DiscoverSchemasRefreshQueryTest()
         {
             // setup
             Server server = new Server
@@ -489,7 +490,7 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal($"", schema.Query);
+            Assert.Equal(TestQuery, schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -604,7 +605,7 @@ namespace PluginOracleNetTest.Plugin
         // }
 
         [Fact]
-        public async Task ReadStreamTableSchemaTest()
+        public async Task ReadStreamQuerySchemaTest()
         {
             // setup
             Server server = new Server
@@ -653,7 +654,7 @@ namespace PluginOracleNetTest.Plugin
             }
 
             // assert
-            Assert.Equal(421, records.Count);
+            Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
             // Assert.Equal("3", record["\"CHANNEL_ID\""]);
@@ -665,11 +666,6 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);
-            Assert.Equal("Spokane", record["\"CITY\""]);
-            Assert.Equal("WA", record["\"STATE\""]);
-            Assert.Equal("8 Golden Leaf Drive", record["\"ADDRESS\""]);
-            Assert.Equal("99205", record["\"ZIP\""]);
-            Assert.Equal("Erica Smith", record["\"REP\""]);
 
             // cleanup
             await channel.ShutdownAsync();
@@ -766,7 +762,7 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            var schema = GetTestSchema(TestSchemaID, TestSchemaName, $"SELECT * FROM {TestSchemaID}");
+            var schema = GetTestSchema(TestSchemaID, TestSchemaName, TestQuery);
 
             var connectRequest = GetConnectSettings();
 
@@ -808,282 +804,282 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
         
-        [Fact]
-        public async Task PrepareWriteTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-            };
-            server.Start();
-
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            var connectRequest = GetConnectSettings();
-
-            var request = new PrepareWriteRequest()
-            {
-                Schema = GetTestSchema(),
-                CommitSlaSeconds = 1,
-                Replication = new ReplicationWriteRequest
-                {
-                    SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
-                    {
-                        SchemaName = "C##Demo",
-                        GoldenTableName = "gr_test",
-                        VersionTableName = "vr_test"
-                    })
-                },
-                DataVersions = new DataVersions
-                {
-                    JobId = "jobUnitTest",
-                    ShapeId = "shapeUnitTest",
-                    JobDataVersion = 1,
-                    ShapeDataVersion = 2
-                }
-            };
-
-            // act
-            client.Connect(connectRequest);
-            var response = client.PrepareWrite(request);
-
-            // assert
-            Assert.IsType<PrepareWriteResponse>(response);
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
-        
-        [Fact]
-        public async Task WriteTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-            };
-            server.Start();
-
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            var connectRequest = GetConnectSettings();
-
-            var configureRequest = new ConfigureWriteRequest
-            {
-                Form = new ConfigurationFormRequest
-                {
-                    DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
-                    {
-                        StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
-                    })
-                }
-            };
-
-            var records = new List<Record>()
-            {
-                new Record
-                {
-                    Action = Record.Types.Action.Upsert,
-                    CorrelationId = "ACCOUNTARCHIVE_GHTesting",
-                    RecordId = "record1",
-                    DataJson = @"{
-    ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
-    ""U_FIRST_NAME"":""Test"",
-    ""U_LAST_NAME"":""First"",
-    ""U_EMAIL"":""test.first@email.net"",
-    ""U_ADDRESS"":""1234 Test Road"",
-    ""U_CITY"":""Test"",
-    ""U_STATE"":""MI"",
-    ""U_ZIP"":""55555"",
-    ""U_GENERAL_LEDGER"":""11112"",
-    ""U_BALANCE"":""0.00"",
-    ""U_REP"":""Ron Jordans""
-}",
-                }
-            };
-
-            var recordAcks = new List<RecordAck>();
-
-            // act
-            client.Connect(connectRequest);
-
-            var configureResponse = client.ConfigureWrite(configureRequest);
-
-            var prepareWriteRequest = new PrepareWriteRequest()
-            {
-                Schema = configureResponse.Schema,
-                CommitSlaSeconds = 1000,
-                DataVersions = new DataVersions
-                {
-                    JobId = "jobUnitTest",
-                    ShapeId = "shapeUnitTest",
-                    JobDataVersion = 1,
-                    ShapeDataVersion = 1
-                }
-            };
-            client.PrepareWrite(prepareWriteRequest);
-
-            using (var call = client.WriteStream())
-            {
-                var responseReaderTask = Task.Run(async () =>
-                {
-                    while (await call.ResponseStream.MoveNext())
-                    {
-                        var ack = call.ResponseStream.Current;
-                        recordAcks.Add(ack);
-                    }
-                });
-
-                foreach (Record record in records)
-                {
-                    await call.RequestStream.WriteAsync(record);
-                }
-
-                await call.RequestStream.CompleteAsync();
-                await responseReaderTask;
-            }
-
-            // assert
-            Assert.Single(recordAcks);
-            Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
-        
-        [Fact]
-        public async Task ReplicationWriteTest()
-        {
-            // setup
-            Server server = new Server
-            {
-                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-            };
-            server.Start();
-
-            var port = server.Ports.First().BoundPort;
-
-            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-            var client = new Publisher.PublisherClient(channel);
-
-            var connectRequest = GetConnectSettings();
-
-            var prepareWriteRequest = new PrepareWriteRequest()
-            {
-                Schema = GetTestReplicationSchema(),
-                CommitSlaSeconds = 1000,
-                Replication = new ReplicationWriteRequest
-                {
-                    SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
-                    {
-                        SchemaName = "C##Demo",
-                        GoldenTableName = "gr_test",
-                        VersionTableName = "vr_test"
-                    })
-                },
-                DataVersions = new DataVersions
-                {
-                    JobId = "jobUnitTest",
-                    ShapeId = "shapeUnitTest",
-                    JobDataVersion = 1,
-                    ShapeDataVersion = 1
-                }
-            };
-
-            var records = new List<Record>()
-            {
-                {
-                    new Record
-                    {
-                        Action = Record.Types.Action.Upsert,
-                        CorrelationId = "ACCOUNTARCHIVE_GHTesting",
-                        RecordId = "record1",
-                        //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
-                        DataJson = $@"{{
-    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-    ""FIRST_NAME"":""Test"",
-    ""LAST_NAME"":""Second"",
-    ""EMAIL"":""test.second@email.net"",
-    ""ADDRESS"":""5678 Test Road"",
-    ""CITY"":""Test"",
-    ""STATE"":""MI"",
-    ""ZIP"":""91952"",
-    ""GENERAL_LEDGER"":""11190"",
-    ""BALANCE"":""1.00"",
-    ""REP"":""Ron Jordans""
-}}".Replace("\n", ""),
-                        Versions =
-                        {
-                            new RecordVersion
-                            {
-                                RecordId = "version1",
-                                //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
-                                DataJson = $@"{{
-    ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-    ""FIRST_NAME"":""Test"",
-    ""LAST_NAME"":""Second"",
-    ""EMAIL"":""test.second@email.net"",
-    ""ADDRESS"":""5678 Test Road"",
-    ""CITY"":""Test"",
-    ""STATE"":""MI"",
-    ""ZIP"":""91952"",
-    ""GENERAL_LEDGER"":""11190"",
-    ""BALANCE"":""1.00"",
-    ""REP"":""Ron Jordans""
-}}".Replace("\n", "")
-                            }
-                        }
-                    }
-                }
-            };
-
-            var recordAcks = new List<RecordAck>();
-
-            // act
-            client.Connect(connectRequest);
-            client.PrepareWrite(prepareWriteRequest);
-
-            using (var call = client.WriteStream())
-            {
-                var responseReaderTask = Task.Run(async () =>
-                {
-                    while (await call.ResponseStream.MoveNext())
-                    {
-                        var ack = call.ResponseStream.Current;
-                        recordAcks.Add(ack);
-                    }
-                });
-
-                foreach (Record record in records)
-                {
-                    await call.RequestStream.WriteAsync(record);
-                }
-
-                await call.RequestStream.CompleteAsync();
-                await responseReaderTask;
-            }
-
-            // assert
-            Assert.Single(recordAcks);
-            Assert.Equal("", recordAcks[0].Error);
-            Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
-
-            // cleanup
-            await channel.ShutdownAsync();
-            await server.ShutdownAsync();
-        }
+//         [Fact]
+//         public async Task PrepareWriteTest()
+//         {
+//             // setup
+//             Server server = new Server
+//             {
+//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
+//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+//             };
+//             server.Start();
+//
+//             var port = server.Ports.First().BoundPort;
+//
+//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+//             var client = new Publisher.PublisherClient(channel);
+//
+//             var connectRequest = GetConnectSettings();
+//
+//             var request = new PrepareWriteRequest()
+//             {
+//                 Schema = GetTestSchema(),
+//                 CommitSlaSeconds = 1,
+//                 Replication = new ReplicationWriteRequest
+//                 {
+//                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
+//                     {
+//                         SchemaName = "C##Demo",
+//                         GoldenTableName = "gr_test",
+//                         VersionTableName = "vr_test"
+//                     })
+//                 },
+//                 DataVersions = new DataVersions
+//                 {
+//                     JobId = "jobUnitTest",
+//                     ShapeId = "shapeUnitTest",
+//                     JobDataVersion = 1,
+//                     ShapeDataVersion = 2
+//                 }
+//             };
+//
+//             // act
+//             client.Connect(connectRequest);
+//             var response = client.PrepareWrite(request);
+//
+//             // assert
+//             Assert.IsType<PrepareWriteResponse>(response);
+//
+//             // cleanup
+//             await channel.ShutdownAsync();
+//             await server.ShutdownAsync();
+//         }
+//         
+//         [Fact]
+//         public async Task WriteTest()
+//         {
+//             // setup
+//             Server server = new Server
+//             {
+//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
+//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+//             };
+//             server.Start();
+//
+//             var port = server.Ports.First().BoundPort;
+//
+//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+//             var client = new Publisher.PublisherClient(channel);
+//
+//             var connectRequest = GetConnectSettings();
+//
+//             var configureRequest = new ConfigureWriteRequest
+//             {
+//                 Form = new ConfigurationFormRequest
+//                 {
+//                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
+//                     {
+//                         StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
+//                     })
+//                 }
+//             };
+//
+//             var records = new List<Record>()
+//             {
+//                 new Record
+//                 {
+//                     Action = Record.Types.Action.Upsert,
+//                     CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+//                     RecordId = "record1",
+//                     DataJson = @"{
+//     ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
+//     ""U_FIRST_NAME"":""Test"",
+//     ""U_LAST_NAME"":""First"",
+//     ""U_EMAIL"":""test.first@email.net"",
+//     ""U_ADDRESS"":""1234 Test Road"",
+//     ""U_CITY"":""Test"",
+//     ""U_STATE"":""MI"",
+//     ""U_ZIP"":""55555"",
+//     ""U_GENERAL_LEDGER"":""11112"",
+//     ""U_BALANCE"":""0.00"",
+//     ""U_REP"":""Ron Jordans""
+// }",
+//                 }
+//             };
+//
+//             var recordAcks = new List<RecordAck>();
+//
+//             // act
+//             client.Connect(connectRequest);
+//
+//             var configureResponse = client.ConfigureWrite(configureRequest);
+//
+//             var prepareWriteRequest = new PrepareWriteRequest()
+//             {
+//                 Schema = configureResponse.Schema,
+//                 CommitSlaSeconds = 1000,
+//                 DataVersions = new DataVersions
+//                 {
+//                     JobId = "jobUnitTest",
+//                     ShapeId = "shapeUnitTest",
+//                     JobDataVersion = 1,
+//                     ShapeDataVersion = 1
+//                 }
+//             };
+//             client.PrepareWrite(prepareWriteRequest);
+//
+//             using (var call = client.WriteStream())
+//             {
+//                 var responseReaderTask = Task.Run(async () =>
+//                 {
+//                     while (await call.ResponseStream.MoveNext())
+//                     {
+//                         var ack = call.ResponseStream.Current;
+//                         recordAcks.Add(ack);
+//                     }
+//                 });
+//
+//                 foreach (Record record in records)
+//                 {
+//                     await call.RequestStream.WriteAsync(record);
+//                 }
+//
+//                 await call.RequestStream.CompleteAsync();
+//                 await responseReaderTask;
+//             }
+//
+//             // assert
+//             Assert.Single(recordAcks);
+//             Assert.Equal("", recordAcks[0].Error);
+//             Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+//
+//             // cleanup
+//             await channel.ShutdownAsync();
+//             await server.ShutdownAsync();
+//         }
+//         
+//         [Fact]
+//         public async Task ReplicationWriteTest()
+//         {
+//             // setup
+//             Server server = new Server
+//             {
+//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
+//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+//             };
+//             server.Start();
+//
+//             var port = server.Ports.First().BoundPort;
+//
+//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+//             var client = new Publisher.PublisherClient(channel);
+//
+//             var connectRequest = GetConnectSettings();
+//
+//             var prepareWriteRequest = new PrepareWriteRequest()
+//             {
+//                 Schema = GetTestReplicationSchema(),
+//                 CommitSlaSeconds = 1000,
+//                 Replication = new ReplicationWriteRequest
+//                 {
+//                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
+//                     {
+//                         SchemaName = "C##Demo",
+//                         GoldenTableName = "gr_test",
+//                         VersionTableName = "vr_test"
+//                     })
+//                 },
+//                 DataVersions = new DataVersions
+//                 {
+//                     JobId = "jobUnitTest",
+//                     ShapeId = "shapeUnitTest",
+//                     JobDataVersion = 1,
+//                     ShapeDataVersion = 1
+//                 }
+//             };
+//
+//             var records = new List<Record>()
+//             {
+//                 {
+//                     new Record
+//                     {
+//                         Action = Record.Types.Action.Upsert,
+//                         CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+//                         RecordId = "record1",
+//                         //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
+//                         DataJson = $@"{{
+//     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
+//     ""FIRST_NAME"":""Test"",
+//     ""LAST_NAME"":""Second"",
+//     ""EMAIL"":""test.second@email.net"",
+//     ""ADDRESS"":""5678 Test Road"",
+//     ""CITY"":""Test"",
+//     ""STATE"":""MI"",
+//     ""ZIP"":""91952"",
+//     ""GENERAL_LEDGER"":""11190"",
+//     ""BALANCE"":""1.00"",
+//     ""REP"":""Ron Jordans""
+// }}".Replace("\n", ""),
+//                         Versions =
+//                         {
+//                             new RecordVersion
+//                             {
+//                                 RecordId = "version1",
+//                                 //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
+//                                 DataJson = $@"{{
+//     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
+//     ""FIRST_NAME"":""Test"",
+//     ""LAST_NAME"":""Second"",
+//     ""EMAIL"":""test.second@email.net"",
+//     ""ADDRESS"":""5678 Test Road"",
+//     ""CITY"":""Test"",
+//     ""STATE"":""MI"",
+//     ""ZIP"":""91952"",
+//     ""GENERAL_LEDGER"":""11190"",
+//     ""BALANCE"":""1.00"",
+//     ""REP"":""Ron Jordans""
+// }}".Replace("\n", "")
+//                             }
+//                         }
+//                     }
+//                 }
+//             };
+//
+//             var recordAcks = new List<RecordAck>();
+//
+//             // act
+//             client.Connect(connectRequest);
+//             client.PrepareWrite(prepareWriteRequest);
+//
+//             using (var call = client.WriteStream())
+//             {
+//                 var responseReaderTask = Task.Run(async () =>
+//                 {
+//                     while (await call.ResponseStream.MoveNext())
+//                     {
+//                         var ack = call.ResponseStream.Current;
+//                         recordAcks.Add(ack);
+//                     }
+//                 });
+//
+//                 foreach (Record record in records)
+//                 {
+//                     await call.RequestStream.WriteAsync(record);
+//                 }
+//
+//                 await call.RequestStream.CompleteAsync();
+//                 await responseReaderTask;
+//             }
+//
+//             // assert
+//             Assert.Single(recordAcks);
+//             Assert.Equal("", recordAcks[0].Error);
+//             Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+//
+//             // cleanup
+//             await channel.ShutdownAsync();
+//             await server.ShutdownAsync();
+//         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
 using PluginOracleNetConfig.API.Factory;
@@ -54,43 +55,84 @@ namespace PluginOracleNetConfig.API.Discover
             {
                 configSchemaObject = Utility.Utility.ReadSchemaConfigsFromJson(settings.ConfigSchemaFilePath);
             }
+            
+            // loop over config schemas and auto-fill properties & details
+            var conn = connFactory.GetConnection();
 
-            // loop over each config list item
-            foreach (var cso in configSchemaObject)
+            try
             {
-                // convert each config schema object into a schema
-                var resultSchema = new Schema()
-                {
-                    Id = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
-                    //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
-                    Query = "",
-                    DataFlowDirection = GetDataFlowDirection(cso.DataFlowDirection),
-                    Description = "",
-                    Name = $"{settings.Username.ToAllCaps()}.{cso.Id}"
-                };
-                
-                // map each property in config schema into result schema
-                resultSchema.Properties.Add(cso.Properties.ConvertAll(p => new Property
-                {
-                    Id = Utility.Utility.GetSafeName(p.Id),
-                    Name = p.Id,
-                    Type = GetType(p.Type),
-                    TypeAtSource = GetTypeAtSource(p.Type, p.DataLength, p.DataPrecision, p.DataScale),
-                    Description = "",
-                    IsKey = p.IsKey,
-                    IsNullable = p.IsNullable
-                }));
+                await conn.OpenAsync();
 
-                // return a schema for each config list item
-                resultSchemas.Add(resultSchema);
-            }
-
-            foreach (var rs in resultSchemas)
-            {
-                if (rs != null)
+                // loop over each config list item
+                foreach (var cso in configSchemaObject)
                 {
-                    yield return await AddSampleAndCount(connFactory, rs, sampleSize);
+                    // convert each config schema object into a schema
+                    var resultSchema = new Schema()
+                    {
+                        Id = cso.Id,
+                        //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
+                        Query = cso.Query,
+                        DataFlowDirection = GetDataFlowDirection(cso.DataFlowDirection),
+                        Description = "",
+                        Name = cso.Id
+                    };
+
+                    // run the query attached to the schema to infer property types
+                    var queryCmd = connFactory.GetCommand(cso.Query, conn);
+
+                    var reader = await queryCmd.ExecuteReaderAsync();
+                    var schemaTable = reader.GetSchemaTable();
+
+                    if (schemaTable != null)
+                    {
+                        var unnamedColIndex = 0;
+
+                        // get each column and create a property for column
+                        foreach (DataRow row in schemaTable.Rows)
+                        {
+                            // get column name
+                            var colName = row["ColumnName"].ToString();
+                            if (string.IsNullOrWhiteSpace(colName))
+                            {
+                                colName = $"UNKNOWN_{unnamedColIndex}";
+                                unnamedColIndex++;
+                            }
+
+                            // create property
+                            var property = new Property
+                            {
+                                Id = Utility.Utility.GetSafeName(colName, '"'),
+                                Name = colName,
+                                Description = "",
+                                Type = GetPropertyType(row),
+                                IsKey = string.IsNullOrWhiteSpace(row["IsKey"].ToString()) ? false : Boolean.Parse(row["IsKey"].ToString()),
+                                IsNullable = string.IsNullOrWhiteSpace(row["AllowDBNull"].ToString()) ? false : Boolean.Parse(row["AllowDBNull"].ToString()),
+                                IsCreateCounter = false,
+                                IsUpdateCounter = false,
+                                PublisherMetaJson = ""
+                            };
+
+                            // add property to schema
+                            resultSchema.Properties.Add(property);
+                        }
+
+                        // return a schema for each config list item
+                        resultSchemas.Add(resultSchema);
+                    }
                 }
+
+                foreach (var rs in resultSchemas)
+                {
+                    if (rs != null)
+                    {
+                        yield return await AddSampleAndCount(connFactory, rs, sampleSize);
+                    }
+                }
+
+            }
+            finally
+            {
+                await conn.CloseAsync();
             }
 
             // // Old Discover All method
@@ -183,11 +225,6 @@ namespace PluginOracleNetConfig.API.Discover
 
             return schema;
         }
-
-        // public static PropertyType GetType(string dataType)
-        // {
-        //     return GetType(dataType, null, null, null);
-        // }
         
         public static PropertyType GetType(string dataType, object dataLength = null, object dataPrecision = null, object dataScale = null)
         {

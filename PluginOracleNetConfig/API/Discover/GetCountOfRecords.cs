@@ -10,10 +10,10 @@ namespace PluginOracleNetConfig.API.Discover
         public static async Task<Count> GetCountOfRecords(IConnectionFactory connFactory, Schema schema)
         {
             var query = schema.Query;
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                query = $"SELECT * FROM {schema.Id}";
-            }
+            // if (string.IsNullOrWhiteSpace(query))
+            // {
+            //     query = $"SELECT * FROM {schema.Id}";
+            // }
 
             var conn = connFactory.GetConnection();
             await conn.OpenAsync();
