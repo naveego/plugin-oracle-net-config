@@ -73,7 +73,7 @@ namespace PluginOracleNetConfig.API.Discover
                         //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
                         //Query = cso.Query,
                         DataFlowDirection = GetDataFlowDirection(cso.DataFlowDirection),
-                        Description = "",
+                        Description = $"Query:\n{cso.Query}",
                         Name = cso.Id
                     };
 

@@ -22,7 +22,8 @@ namespace PluginOracleNetConfig.API.Discover
                 Id = importSchema.Id,
                 //Query = importSchema.Query,
                 Name = $"{settings.Username.ToAllCaps()}.{importSchema.Id}",
-                DataFlowDirection = GetDataFlowDirection(importSchema.DataFlowDirection)
+                DataFlowDirection = GetDataFlowDirection(importSchema.DataFlowDirection),
+                Description = $"Query:\n{importSchema.Query}"
             };
             
             // return an updated version from the settings object

@@ -31,11 +31,11 @@ namespace PluginOracleNetConfig.API.Discover
                         continue;
                     }
                     
-                    // // if schema has no query, set schema's query to imported schema's query
-                    // if (string.IsNullOrWhiteSpace(schema.Query))
-                    // {
-                    //     schema.Query = iSchema.Query;
-                    // }
+                    // if description has no query, set schema's description to imported schema's query
+                    if (string.IsNullOrWhiteSpace(schema.Description))
+                    {
+                        schema.Description = $"Query:\n{iSchema.Query}";
+                    }
 
                     var cmd = connFactory.GetCommand(iSchema.Query, conn);
 
