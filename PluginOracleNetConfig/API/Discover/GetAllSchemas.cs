@@ -71,7 +71,7 @@ namespace PluginOracleNetConfig.API.Discover
                     {
                         Id = cso.Id,
                         //Query = $"{Utility.Utility.GetSafeName(settings.Username.ToAllCaps())}.{Utility.Utility.GetSafeName(cso.Id)}",
-                        Query = cso.Query,
+                        //Query = cso.Query,
                         DataFlowDirection = GetDataFlowDirection(cso.DataFlowDirection),
                         Description = "",
                         Name = cso.Id
@@ -125,7 +125,7 @@ namespace PluginOracleNetConfig.API.Discover
                 {
                     if (rs != null)
                     {
-                        yield return await AddSampleAndCount(connFactory, rs, sampleSize);
+                        yield return await AddSampleAndCount(connFactory, settings, rs, sampleSize);
                     }
                 }
 
@@ -215,13 +215,13 @@ namespace PluginOracleNetConfig.API.Discover
             // }
         }
 
-        private static async Task<Schema> AddSampleAndCount(IConnectionFactory connFactory, Schema schema,
+        private static async Task<Schema> AddSampleAndCount(IConnectionFactory connFactory, Settings settings, Schema schema,
             int sampleSize)
         {
             // add sample and count
-            var records = Read.Read.ReadRecords(connFactory, schema).Take(sampleSize);
+            var records = Read.Read.ReadRecords(connFactory, settings, schema).Take(sampleSize);
             schema.Sample.AddRange(await records.ToListAsync());
-            schema.Count = await GetCountOfRecords(connFactory, schema);
+            schema.Count = await GetCountOfRecords(connFactory, settings, schema);
 
             return schema;
         }

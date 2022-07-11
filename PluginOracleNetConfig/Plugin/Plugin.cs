@@ -250,7 +250,7 @@ namespace PluginOracleNetConfig.Plugin
 
                 Logger.SetLogPrefix(jobId);
 
-                var records = Read.ReadRecords(_connectionFactory, schema);
+                var records = Read.ReadRecords(_connectionFactory, _server.Settings, schema);
 
                 await foreach (var record in records)
                 {

@@ -20,7 +20,7 @@ namespace PluginOracleNetConfig.API.Discover
             var outputSchema = new Schema()
             {
                 Id = importSchema.Id,
-                Query = importSchema.Query,
+                //Query = importSchema.Query,
                 Name = $"{settings.Username.ToAllCaps()}.{importSchema.Id}",
                 DataFlowDirection = GetDataFlowDirection(importSchema.DataFlowDirection)
             };
@@ -71,7 +71,7 @@ namespace PluginOracleNetConfig.API.Discover
             // add properties
             outputSchema.Properties.AddRange(refreshProperties);
         
-            return await AddSampleAndCount(connFactory, outputSchema, sampleSize);
+            return await AddSampleAndCount(connFactory, settings, outputSchema, sampleSize);
         }
 
         // private static DecomposeResponse DecomposeSafeName(string schemaId)

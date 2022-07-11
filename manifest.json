@@ -22,6 +22,7 @@
   "querySchema": {
     "ui": {
       "ui:widget": "code",
+      "ui:readonly": true,
       "ui:options": {
         "language": "sql"
       }

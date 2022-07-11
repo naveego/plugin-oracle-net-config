@@ -10,17 +10,13 @@ namespace PluginOracleNetConfig.API.Read
 {
     public static partial class Read
     {
-        public static async IAsyncEnumerable<Record> ReadRecords(IConnectionFactory connFactory, Schema schema)
+        public static async IAsyncEnumerable<Record> ReadRecords(IConnectionFactory connFactory, Settings settings, Schema schema)
         {
             var conn = connFactory.GetConnection();
             await conn.OpenAsync();
 
-            var query = schema.Query;
-
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                query = $"SELECT * FROM {schema.Id}";
-            }
+            var query = Utility.Utility.ReadSchemaConfigsFromJson(settings.ConfigSchemaFilePath)
+                .Find(cs => cs.Id == schema.Id)?.Query;
 
             var cmd = connFactory.GetCommand(query, conn);
             IReader reader;

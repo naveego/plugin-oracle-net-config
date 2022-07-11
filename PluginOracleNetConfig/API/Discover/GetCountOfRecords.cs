@@ -2,23 +2,21 @@ using System;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
 using PluginOracleNetConfig.API.Factory;
+using PluginOracleNetConfig.Helper;
 
 namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {
-        public static async Task<Count> GetCountOfRecords(IConnectionFactory connFactory, Schema schema)
+        public static async Task<Count> GetCountOfRecords(IConnectionFactory connFactory, Settings settings, Schema schema)
         {
-            var query = schema.Query;
-            // if (string.IsNullOrWhiteSpace(query))
-            // {
-            //     query = $"SELECT * FROM {schema.Id}";
-            // }
+            var importQuery = Utility.Utility.ReadSchemaConfigsFromJson(settings.ConfigSchemaFilePath)
+                .Find(cs => cs.Id == schema.Id)?.Query;
 
             var conn = connFactory.GetConnection();
             await conn.OpenAsync();
 
-            var cmd = connFactory.GetCommand($"SELECT COUNT(*) count FROM ({query}) q", conn);
+            var cmd = connFactory.GetCommand($"SELECT COUNT(*) count FROM ({importQuery}) q", conn);
             var reader = await cmd.ExecuteReaderAsync();
 
             var count = -1;

@@ -31,13 +31,13 @@ namespace PluginOracleNetConfig.API.Discover
                         continue;
                     }
                     
-                    // if schema has no query, set schema's query to imported schema's query
-                    if (string.IsNullOrWhiteSpace(schema.Query))
-                    {
-                        schema.Query = iSchema.Query;
-                    }
+                    // // if schema has no query, set schema's query to imported schema's query
+                    // if (string.IsNullOrWhiteSpace(schema.Query))
+                    // {
+                    //     schema.Query = iSchema.Query;
+                    // }
 
-                    var cmd = connFactory.GetCommand(schema.Query, conn);
+                    var cmd = connFactory.GetCommand(iSchema.Query, conn);
 
                     var reader = await cmd.ExecuteReaderAsync();
                     var schemaTable = reader.GetSchemaTable();
@@ -84,7 +84,7 @@ namespace PluginOracleNetConfig.API.Discover
                     schema.Properties.AddRange(properties);
 
                     // get sample and count
-                    yield return await AddSampleAndCount(connFactory, schema, sampleSize);
+                    yield return await AddSampleAndCount(connFactory, settings, schema, sampleSize);
                 }
             }
             finally

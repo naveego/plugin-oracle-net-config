@@ -20,12 +20,11 @@ namespace PluginOracleNetTest.Plugin
 
         private static string TestSchemaID = "Query1";
         private static string TestSchemaName = "Query1";
-        private static string TestQuery = "";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 3;
         
-        // private static string TestSchemaID_2 = "\"C##DEMO\".\"SRMData_GHTesting\"";
-        // private static string TestSchemaName_2 = "C##DEMO.SRMData_GHTesting";
+        // private static string TestSchemaID_2 = "";
+        // private static string TestSchemaName_2 = "";
         // private static int TestSampleCount_2 = 0;
         // private static int TestPropertyCount_2 = 10;
 
@@ -37,10 +36,6 @@ namespace PluginOracleNetTest.Plugin
 
         private Settings GetSettings()
         {
-            //var settingsFile = System.IO.File.ReadAllText("C:\\Temp\\OracleServerSettings.json");
-            //Settings settings = JsonConvert.DeserializeObject<Settings>(settingsFile);
-            //return settings;
-
             return new Settings
             {
                 Hostname = "",
@@ -49,7 +44,6 @@ namespace PluginOracleNetTest.Plugin
                 Username = "",
                 ServiceName = "",
                 ConfigSchemaFilePath = TestConfigSchemaFilePath
-                //WalletPath = ""
             };
         }
 
@@ -348,7 +342,7 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            const string wrongUsername = "C##ITSALLWRONG";
+            const string wrongUsername = "ITSALLWRONG";
 
             var request = new ConnectRequest
             {
@@ -357,7 +351,7 @@ namespace PluginOracleNetTest.Plugin
                     Hostname = "",
                     Port = "",
                     Password = "",
-                    Username = "",
+                    Username = wrongUsername,
                     ServiceName = "",
                     ConfigSchemaFilePath = TestConfigSchemaFilePath
                 }),
@@ -418,7 +412,7 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal(TestQuery, schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -490,7 +484,7 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal(TestQuery, schema.Query);
+            Assert.Equal("", schema.Query);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -762,7 +756,7 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            var schema = GetTestSchema(TestSchemaID, TestSchemaName, TestQuery);
+            var schema = GetTestSchema(TestSchemaID, TestSchemaName, "");
 
             var connectRequest = GetConnectSettings();
 
