@@ -41,12 +41,6 @@ namespace PluginOracleNetConfig.API.Utility
             // if refresh or first time loading
             if (refresh || _configQueries.Count == 0)
             {
-                // also refresh cached config file path if provided file path is valid
-                if (string.IsNullOrWhiteSpace(filePath))
-                {
-                    _configSchemaFilePath = filePath;
-                }
-                
                 LoadQueryConfigsFromJson(_configSchemaFilePath);
             }
             

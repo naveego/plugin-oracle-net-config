@@ -30,52 +30,22 @@ namespace PluginOracleNetConfig.API.Discover
                 configQueries = Utility.Utility.GetConfigQueries();
             }
             
-            // loop over config schemas and auto-fill properties & details
-            var conn = connFactory.GetConnection();
-
-            try
+            // loop over each config list item
+            foreach (var cq in configQueries)
             {
-                await conn.OpenAsync();
-
-                // loop over each config list item
-                foreach (var cq in configQueries)
-                {
-                    // convert each config schema object into a schema
-                    var resultSchema = new Schema
-                    {
-                        Id = cq.Id,
-                        Query = "", // disable custom query editing
-                        DataFlowDirection = Schema.Types.DataFlowDirection.Read, // make schema readonly
-                        Description = $"Query:\n{cq.Query}", // include query in the description
-                        Name = cq.Id
-                    };
-
-                    // run the query attached to the schema to infer property types
-                    var queryCmd = connFactory.GetCommand(cq.Query, conn);
-                    var reader = await queryCmd.ExecuteReaderAsync();
-                    var schemaTable = reader.GetSchemaTable();
-
-                    // synthesize schema properties from the query
-                    resultSchema = SynthesizeSchemaFromQueryResults(resultSchema, schemaTable.Rows);
-                    
-                    // add final schema to a list
-                    resultSchemas.Add(resultSchema);
-                }
-                
-                // loop over final list
-                foreach (var rs in resultSchemas)
-                {
-                    if (rs != null)
-                    {
-                        // for each schema, add sample and count
-                        yield return await AddSampleAndCount(connFactory, rs, sampleSize);
-                    }
-                }
+                // synthesize schema properties from the query
+                // add schema to a list
+                resultSchemas.Add(await SynthesizeSchemaFromQuery(connFactory, cq));
             }
-            finally
+            
+            // loop over final list
+            foreach (var rs in resultSchemas)
             {
-                // clean up
-                await conn.CloseAsync();
+                if (rs != null)
+                {
+                    // for each schema, add sample and count
+                    yield return await AddSampleAndCount(connFactory, rs, sampleSize);
+                }
             }
         }
 

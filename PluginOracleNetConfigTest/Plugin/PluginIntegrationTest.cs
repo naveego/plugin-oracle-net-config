@@ -20,20 +20,21 @@ namespace PluginOracleNetTest.Plugin
 
         private static string TestSchemaID = "Query1";
         private static string TestSchemaName = "Query1";
-        private static string TestSchemaDescription = "";
+        private static string TestSchemaDescription = "Query:\nSELECT ID, LAST_NAME, FIRST_NAME FROM \"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaDescription2 = "Query:\nSELECT ID, LAST_NAME, FIRST_NAME, EMAIL FROM \"<schema_name>\".\"<table_name>\"";
         private static int TestSampleCount = 10;
-        private static int TestPropertyCount = 3;
-        
-        // private static string TestSchemaID_2 = "";
-        // private static string TestSchemaName_2 = "";
-        // private static int TestSampleCount_2 = 0;
-        // private static int TestPropertyCount_2 = 10;
-
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
+        private static int TestPropertyCount = 3;
+
+        private static string TestPropertyID2 = "\"EMAIL\"";
+        private static string TestPropertyName2 = "EMAIL";
+        private static int TestPropertyCount2 = 4;
 
         // TODO: (When testing) Specify file path to config.json
         private static string TestConfigSchemaFilePath = "";
+        private static string AltConfigSchemaFilePath = "";
+        private static string RestoreConfigSchemaFilePath = "";
 
         private Settings GetSettings()
         {
@@ -88,7 +89,7 @@ namespace PluginOracleNetTest.Plugin
 
         private Schema GetTestReplicationSchema(string id = "test", string name = "test", string query = "")
         {
-            // --- Note: Changed to fit the schema of the ACCOUNTARCHIVE_GHTesting table ---
+            // --- Note: Changed to fit the schema of the <table_name> table ---
             // Change query if empty
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -255,6 +256,12 @@ namespace PluginOracleNetTest.Plugin
                     },*/
                 }
             };
+        }
+
+        private void UpdateConfigFile(bool alternative = false)
+        {
+            var restoreContents = File.ReadAllText(alternative ? AltConfigSchemaFilePath : RestoreConfigSchemaFilePath);
+            File.WriteAllText(TestConfigSchemaFilePath, restoreContents);
         }
         
         [Fact]
@@ -504,6 +511,67 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
+        [Fact]
+        public async Task DiscoverSchemasRefreshConfigChangeTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
+                Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
+            };
+            server.Start();
+
+            int port = server.Ports.First().BoundPort;
+
+            Channel channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            Publisher.PublisherClient client = new Publisher.PublisherClient(channel);
+
+            var connectRequest = GetConnectSettings();
+
+            var request = new DiscoverSchemasRequest
+            {
+                Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
+                SampleSize = 10,
+                ToRefresh = { GetTestSchema(TestSchemaID, TestSchemaName) }
+            };
+
+            // act
+            UpdateConfigFile();
+            client.Connect(connectRequest);
+            client.DiscoverSchemas(request);
+            
+            // ---- change the file ----
+            UpdateConfigFile(true);
+            var response = client.DiscoverSchemas(request);
+
+            // assert
+            Assert.IsType<DiscoverSchemasResponse>(response);
+            Assert.Single(response.Schemas);
+
+            var schema = response.Schemas[0];
+            Assert.Equal(TestSchemaID, schema.Id);
+            Assert.Equal(TestSchemaName, schema.Name);
+            Assert.Equal("", schema.Query);
+            Assert.Equal(TestSchemaDescription2, schema.Description);
+            Assert.Equal(TestSampleCount, schema.Sample.Count);
+            Assert.Equal(TestPropertyCount2, schema.Properties.Count);
+
+            // load third property, expect it to be email
+            var property = schema.Properties[3];
+            Assert.Equal(TestPropertyID2, property.Id);
+            Assert.Equal(TestPropertyName2, property.Name);
+            Assert.Equal("", property.Description);
+            Assert.Equal(PropertyType.String, property.Type);
+            Assert.False(property.IsKey);
+            Assert.True(property.IsNullable);
+
+            // cleanup
+            UpdateConfigFile();
+            await channel.ShutdownAsync();
+            await server.ShutdownAsync();
+        }
+
         // [Fact]
         // public async Task DiscoverSchemasRefreshQueryTest()
         // {
@@ -679,7 +747,7 @@ namespace PluginOracleNetTest.Plugin
         //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
         //     var client = new Publisher.PublisherClient(channel);
         //
-        //     //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"C##DEMO\".\"ACCOUNTARCHIVE\"");
+        //     //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"<schema_name>\".\"ACCOUNTARCHIVE\"");
         //     var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
         //     
         //     var connectRequest = GetConnectSettings();
@@ -821,7 +889,7 @@ namespace PluginOracleNetTest.Plugin
 //                 {
 //                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
 //                     {
-//                         SchemaName = "C##Demo",
+//                         SchemaName = "<schema_name>",
 //                         GoldenTableName = "gr_test",
 //                         VersionTableName = "vr_test"
 //                     })
@@ -871,7 +939,7 @@ namespace PluginOracleNetTest.Plugin
 //                 {
 //                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
 //                     {
-//                         StoredProcedure = "UpsertIntoAccountArchive_GHTesting"
+//                         StoredProcedure = "UpsertInto<table_name>"
 //                     })
 //                 }
 //             };
@@ -881,7 +949,7 @@ namespace PluginOracleNetTest.Plugin
 //                 new Record
 //                 {
 //                     Action = Record.Types.Action.Upsert,
-//                     CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+//                     CorrelationId = "<table_name>",
 //                     RecordId = "record1",
 //                     DataJson = @"{
 //     ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
@@ -943,7 +1011,7 @@ namespace PluginOracleNetTest.Plugin
 //             // assert
 //             Assert.Single(recordAcks);
 //             Assert.Equal("", recordAcks[0].Error);
-//             Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+//             Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
 //
 //             // cleanup
 //             await channel.ShutdownAsync();
@@ -976,7 +1044,7 @@ namespace PluginOracleNetTest.Plugin
 //                 {
 //                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
 //                     {
-//                         SchemaName = "C##Demo",
+//                         SchemaName = "<schema_name>",
 //                         GoldenTableName = "gr_test",
 //                         VersionTableName = "vr_test"
 //                     })
@@ -996,7 +1064,7 @@ namespace PluginOracleNetTest.Plugin
 //                     new Record
 //                     {
 //                         Action = Record.Types.Action.Upsert,
-//                         CorrelationId = "ACCOUNTARCHIVE_GHTesting",
+//                         CorrelationId = "<table_name>",
 //                         RecordId = "record1",
 //                         //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
 //                         DataJson = $@"{{
@@ -1066,7 +1134,7 @@ namespace PluginOracleNetTest.Plugin
 //             // assert
 //             Assert.Single(recordAcks);
 //             Assert.Equal("", recordAcks[0].Error);
-//             Assert.Equal("ACCOUNTARCHIVE_GHTesting", recordAcks[0].CorrelationId);
+//             Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
 //
 //             // cleanup
 //             await channel.ShutdownAsync();
