@@ -53,7 +53,7 @@ namespace PluginOracleNetConfig.Helper
                 throw new Exception("The ConfigSchemaFilePath property must be set");
             }
 
-            Utility.ReadSchemaConfigsFromJson(ConfigSchemaFilePath);
+            Utility.LoadQueryConfigsFromJson(ConfigSchemaFilePath);
         }
 
         /// <summary>

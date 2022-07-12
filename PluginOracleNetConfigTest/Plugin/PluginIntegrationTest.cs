@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -20,6 +20,7 @@ namespace PluginOracleNetTest.Plugin
 
         private static string TestSchemaID = "Query1";
         private static string TestSchemaName = "Query1";
+        private static string TestSchemaDescription = "";
         private static int TestSampleCount = 10;
         private static int TestPropertyCount = 3;
         
@@ -413,6 +414,7 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
             Assert.Equal("", schema.Query);
+            Assert.Equal(TestSchemaDescription, schema.Description);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -485,6 +487,7 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
             Assert.Equal("", schema.Query);
+            Assert.Equal(TestSchemaDescription, schema.Description);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -651,12 +654,6 @@ namespace PluginOracleNetTest.Plugin
             Assert.Equal(424, records.Count);
 
             var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-            // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-            // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-            // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-            // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-            // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-            // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
             Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
             Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
             Assert.Equal("Stopher", record["\"LAST_NAME\""]);

@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 namespace PluginOracleNetConfig.DataContracts
 {
     /// <summary>
-    /// Represents a named query that is read from a configuration file
+    /// Represents a schema that is read from a configuration file
     /// </summary>
     public class ConfigQuery
     {

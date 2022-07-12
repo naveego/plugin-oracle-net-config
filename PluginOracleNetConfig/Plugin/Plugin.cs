@@ -23,10 +23,6 @@ namespace PluginOracleNetConfig.Plugin
         private readonly ServerStatus _server;
         private TaskCompletionSource<bool> _tcs;
         private IConnectionFactory _connectionFactory;
-        private ConfigureReplicationFormData _replicationConfig;
-        
-        // store config schemas imported from files inside a list
-        private List<ConfigSchema> _impotedSchemas;
 
         public Plugin(IConnectionFactory connectionFactory = null)
         {
@@ -250,7 +246,7 @@ namespace PluginOracleNetConfig.Plugin
 
                 Logger.SetLogPrefix(jobId);
 
-                var records = Read.ReadRecords(_connectionFactory, _server.Settings, schema);
+                var records = Read.ReadRecords(_connectionFactory, schema);
 
                 await foreach (var record in records)
                 {

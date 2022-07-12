@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Naveego.Sdk.Plugins;
@@ -14,112 +16,79 @@ namespace PluginOracleNetConfig.API.Discover
             int sampleSize = 5)
         {
             // read in schema from settings
-            var importSchema = Utility.Utility.ReadSchemaConfigsFromJson(settings.ConfigSchemaFilePath, schema.Id);
-        
-            // create new schema
-            var outputSchema = new Schema()
+            var importSchema = Utility.Utility.GetConfigQuery(schema.Id, true, settings.ConfigSchemaFilePath);
+
+            var conn = connFactory.GetConnection();
+
+            try
             {
-                Id = importSchema.Id,
-                //Query = importSchema.Query,
-                Name = $"{settings.Username.ToAllCaps()}.{importSchema.Id}",
-                DataFlowDirection = GetDataFlowDirection(importSchema.DataFlowDirection),
-                Description = $"Query:\n{importSchema.Query}"
-            };
-            
-            // return an updated version from the settings object
-            var refreshProperties = new List<Property>();
-            
-            foreach (var p in importSchema.Properties)
-            {
-                // add column to refreshProperties
-                var property = new Property
+                await conn.OpenAsync();
+
+                // re-create schema
+                var outputSchema = new Schema()
                 {
-                    Id = Utility.Utility.GetSafeName(p.Id),
-                    Name = p.Id,
-                    IsKey = p.IsKey,
-                    IsNullable = p.IsNullable,
-                    Type = GetType(
-                        p.Type,
-                        p.DataLength,
-                        p.DataPrecision,
-                        p.DataScale
-                    ),
-                    TypeAtSource = GetTypeAtSource(
-                        p.Type,
-                        p.DataLength,
-                        p.DataPrecision,
-                        p.DataScale
-                    ),
-                    Description = ""
+                    Id = importSchema.Id,
+                    Query = "",
+                    Name = importSchema.Id,
+                    Description = $"Query:\n{importSchema.Query}"
                 };
                 
-                // 
-                var prevProp = refreshProperties.FirstOrDefault(p2 => p2.Id == property.Id);
-                if (prevProp == null)
-                {
-                    refreshProperties.Add(property);
-                }
-                else
-                {
-                    var index = refreshProperties.IndexOf(prevProp);
-                    refreshProperties.RemoveAt(index);
-            
-                    property.IsKey = prevProp.IsKey || property.IsKey;
-                    refreshProperties.Add(property);
-                }
+                // run the SELECT query from the import schema
+                var cmd = connFactory.GetCommand(importSchema.Query, conn);
+                var reader = await cmd.ExecuteReaderAsync();
+                var schemaTable = reader.GetSchemaTable();
+
+                // get the columns from the SELECT query
+                outputSchema = SynthesizeSchemaFromQueryResults(outputSchema, schemaTable.Rows);
+                
+                return await AddSampleAndCount(connFactory, outputSchema, sampleSize);
             }
-            
-            // add properties
-            outputSchema.Properties.AddRange(refreshProperties);
-        
-            return await AddSampleAndCount(connFactory, settings, outputSchema, sampleSize);
+            finally
+            {
+                await conn.CloseAsync();
+            }
         }
 
-        // private static DecomposeResponse DecomposeSafeName(string schemaId)
-        // {
-        //     var response = new DecomposeResponse
-        //     {
-        //         Database = "",
-        //         Schema = "",
-        //         Table = ""
-        //     };
-        //     var parts = schemaId.Split('.');
-        //
-        //     switch (parts.Length)
-        //     {
-        //         case 0:
-        //             return response;
-        //         case 1:
-        //             response.Table = parts[0];
-        //             return response;
-        //         case 2:
-        //             response.Schema = parts[0];
-        //             response.Table = parts[1];
-        //             return response;
-        //         case 3:
-        //             response.Database = parts[0];
-        //             response.Schema = parts[1];
-        //             response.Table = parts[2];
-        //             return response;
-        //         default:
-        //             return response;
-        //     }
-        // }
-        //
-        // private static DecomposeResponse TrimEscape(this DecomposeResponse response, char escape = '"')
-        // {
-        //     response.Database = response.Database.Trim(escape);
-        //     response.Schema = response.Schema.Trim(escape);
-        //     response.Table = response.Table.Trim(escape);
-        //
-        //     return response;
-        // }
-    }
+        private static Schema SynthesizeSchemaFromQueryResults(Schema schema, DataRowCollection rows)
+        {
+            var properties = new List<Property>();
+                    
+            var unNamedColIndex = 0;
 
-    // class DecomposeResponse
-    // {
-    //     public string Database { get; set; }
-    //     public string Schema { get; set; }
-    //     public string Table { get; set; }
-    // }
+            // get each column and create a property for the column
+            foreach (DataRow row in rows)
+            {
+                // get the column name
+                var colName = row["ColumnName"].ToString();
+                if (string.IsNullOrWhiteSpace(colName))
+                {
+                    colName = $"UNKNOWN_{unNamedColIndex}";
+                    unNamedColIndex++;
+                }
+
+                // create property
+                var property = new Property
+                {
+                    Id = Utility.Utility.GetSafeName(colName, '"'),
+                    Name = colName,
+                    Description = "",
+                    Type = GetPropertyType(row),
+                    IsKey = string.IsNullOrWhiteSpace(row["IsKey"].ToString()) ? false : Boolean.Parse(row["IsKey"].ToString()),
+                    IsNullable = string.IsNullOrWhiteSpace(row["AllowDBNull"].ToString()) ? false : Boolean.Parse(row["AllowDBNull"].ToString()),
+                    IsCreateCounter = false,
+                    IsUpdateCounter = false,
+                    PublisherMetaJson = ""
+                };
+
+                // add property to properties
+                properties.Add(property);
+            }
+
+            // add only discovered properties to schema
+            schema.Properties.Clear();
+            schema.Properties.AddRange(properties);
+
+            return schema;
+        }
+    }
 }
