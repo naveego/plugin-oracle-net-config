@@ -11,7 +11,7 @@ namespace PluginOracleNetConfig.API.Utility
 {
     public static partial class Utility
     {
-        private static List<ConfigQuery> _configSchemas = new List<ConfigQuery>();
+        private static List<ConfigQuery> _configQueries = new List<ConfigQuery>();
         private static string _configSchemaFilePath = "";
     
         public static void LoadQueryConfigsFromJson(string filePath)
@@ -33,13 +33,13 @@ namespace PluginOracleNetConfig.API.Utility
                 }
             }
 
-            _configSchemas = obj;
+            _configQueries = obj;
         }
 
         public static List<ConfigQuery> GetConfigQueries(bool refresh = false, string filePath = "")
         {
             // if refresh or first time loading
-            if (refresh || _configSchemas.Count == 0)
+            if (refresh || _configQueries.Count == 0)
             {
                 // also refresh cached config file path if provided file path is valid
                 if (string.IsNullOrWhiteSpace(filePath))
@@ -50,7 +50,7 @@ namespace PluginOracleNetConfig.API.Utility
                 LoadQueryConfigsFromJson(_configSchemaFilePath);
             }
             
-            return _configSchemas;
+            return _configQueries;
         }
         
         public static ConfigQuery GetConfigQuery(string queryId, bool refresh = false, string filePath = "")

@@ -38,20 +38,20 @@ namespace PluginOracleNetConfig.API.Discover
                 await conn.OpenAsync();
 
                 // loop over each config list item
-                foreach (var cso in configQueries)
+                foreach (var cq in configQueries)
                 {
                     // convert each config schema object into a schema
                     var resultSchema = new Schema
                     {
-                        Id = cso.Id,
+                        Id = cq.Id,
                         Query = "", // disable custom query editing
                         DataFlowDirection = Schema.Types.DataFlowDirection.Read, // make schema readonly
-                        Description = $"Query:\n{cso.Query}", // include query in the description
-                        Name = cso.Id
+                        Description = $"Query:\n{cq.Query}", // include query in the description
+                        Name = cq.Id
                     };
 
                     // run the query attached to the schema to infer property types
-                    var queryCmd = connFactory.GetCommand(cso.Query, conn);
+                    var queryCmd = connFactory.GetCommand(cq.Query, conn);
                     var reader = await queryCmd.ExecuteReaderAsync();
                     var schemaTable = reader.GetSchemaTable();
 
