@@ -13,15 +13,7 @@ namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {
-        // public static async Task<Schema> GetRefreshSchemaForQuery(IConnectionFactory connFactory, Settings settings, Schema schema,
-        //     int sampleSize = 5)
-        // {
-        //     var importQuery = Utility.Utility.GetConfigQuery(schema.Id, true, settings.ConfigSchemaFilePath);
-        //     var outputSchema = await SynthesizeSchemaFromQuery(connFactory, importQuery);
-        //     return await AddSampleAndCount(connFactory, outputSchema, sampleSize);
-        // }
-
-        private static async Task<Schema> SynthesizeSchemaFromQuery(IConnectionFactory connFactory, ConfigQuery query)
+        private static async Task<Schema> GetRefreshSchemaForQuery(IConnectionFactory connFactory, ConfigQuery query)
         {
             // read in schema from settings
             var conn = connFactory.GetConnection();

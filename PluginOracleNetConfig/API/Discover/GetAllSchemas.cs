@@ -35,7 +35,7 @@ namespace PluginOracleNetConfig.API.Discover
             {
                 // synthesize schema properties from the query
                 // add schema to a list
-                resultSchemas.Add(await SynthesizeSchemaFromQuery(connFactory, cq));
+                resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq));
             }
             
             // loop over final list
