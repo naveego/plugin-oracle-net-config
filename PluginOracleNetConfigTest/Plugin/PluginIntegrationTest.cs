@@ -20,8 +20,8 @@ namespace PluginOracleNetTest.Plugin
 
         private static string TestSchemaID = "Query1";
         private static string TestSchemaName = "Query1";
-        private static string TestSchemaDescription = "Query:\nSELECT ID, LAST_NAME, FIRST_NAME FROM \"<schema_name>\".\"<table_name>\"";
-        private static string TestSchemaDescription2 = "Query:\nSELECT ID, LAST_NAME, FIRST_NAME, EMAIL FROM \"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaQuery = "SELECT ID, LAST_NAME, FIRST_NAME FROM \"<schema_name>\".\"<table_name>\"";
+        private static string TestSchemaQuery2 = "SELECT ID, LAST_NAME, FIRST_NAME, EMAIL FROM \"<schema_name>\".\"<table_name>\"";
         private static int TestSampleCount = 10;
         private static string TestPropertyID = "\"ID\"";
         private static string TestPropertyName = "ID";
@@ -32,9 +32,9 @@ namespace PluginOracleNetTest.Plugin
         private static int TestPropertyCount2 = 4;
 
         // TODO: (When testing) Specify file path to config.json
-        private static string TestConfigSchemaFilePath = "";
-        private static string AltConfigSchemaFilePath = "";
-        private static string RestoreConfigSchemaFilePath = "";
+        private static string TestConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-current>.json";
+        private static string AltConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-alt>.json";
+        private static string RestoreConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-restore>.json";
 
         private Settings GetSettings()
         {
@@ -407,6 +407,7 @@ namespace PluginOracleNetTest.Plugin
             };
 
             // act
+            UpdateConfigFile();
             client.Connect(connectRequest);
             var response = client.DiscoverSchemas(request);
 
@@ -420,8 +421,8 @@ namespace PluginOracleNetTest.Plugin
 
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal("", schema.Query);
-            Assert.Equal(TestSchemaDescription, schema.Description);
+            Assert.Equal(TestSchemaQuery, schema.Query);
+            Assert.Equal("", schema.Description);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -483,6 +484,7 @@ namespace PluginOracleNetTest.Plugin
             };
 
             // act
+            UpdateConfigFile();
             client.Connect(connectRequest);
             var response = client.DiscoverSchemas(request);
 
@@ -493,8 +495,8 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal("", schema.Query);
-            Assert.Equal(TestSchemaDescription, schema.Description);
+            Assert.Equal(TestSchemaQuery, schema.Query);
+            Assert.Equal("", schema.Description);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount, schema.Properties.Count);
 
@@ -552,8 +554,8 @@ namespace PluginOracleNetTest.Plugin
             var schema = response.Schemas[0];
             Assert.Equal(TestSchemaID, schema.Id);
             Assert.Equal(TestSchemaName, schema.Name);
-            Assert.Equal("", schema.Query);
-            Assert.Equal(TestSchemaDescription2, schema.Description);
+            Assert.Equal(TestSchemaQuery2, schema.Query);
+            Assert.Equal("", schema.Description);
             Assert.Equal(TestSampleCount, schema.Sample.Count);
             Assert.Equal(TestPropertyCount2, schema.Properties.Count);
 

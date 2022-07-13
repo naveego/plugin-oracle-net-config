@@ -24,12 +24,12 @@ namespace PluginOracleNetConfig.API.Discover
                 await conn.OpenAsync();
                 
                 // re-create schema
-                var outputSchema = new Schema()
+                var outputSchema = new Schema
                 {
                     Id = query.Id,
-                    Query = "",
+                    Query = query.Query,
                     Name = query.Id,
-                    Description = $"Query:\n{query.Query}"
+                    Description = ""
                 };
                 
                 // run the SELECT query from the import schema
@@ -74,7 +74,7 @@ namespace PluginOracleNetConfig.API.Discover
                 outputSchema.Properties.Clear();
                 outputSchema.Properties.AddRange(properties);
                 
-                outputSchema.Description = $"Query:\n{query.Query}"; // include query in the description
+                outputSchema.Query = query.Query; // include query in the description
 
                 return outputSchema;
             }
