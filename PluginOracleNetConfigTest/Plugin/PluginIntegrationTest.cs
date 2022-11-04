@@ -31,12 +31,13 @@ namespace PluginOracleNetTest.Plugin
         private static string TestPropertyName2 = "EMAIL";
         private static int TestPropertyCount2 = 4;
 
-        // (When testing) Specify file path to config.json
-        private static string TestConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>-current.json";
-        private static string PropsMissingConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>.json";
-        private static string DuplicateIdsConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>2.json";
-        private static string AltConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>4.json";
-        private static string RestoreConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>3.json";
+        // (When testing) Specify path to config file folder
+        private static string TestConfigPrefix = "/fill/me/in/during/testing";
+        private static string TestConfigSchemaFilePath = $"{TestConfigPrefix}-current.json";
+        private static string PropsMissingConfigSchemaFilePath = $"{TestConfigPrefix}.json";
+        private static string DuplicateIdsConfigSchemaFilePath = $"{TestConfigPrefix}2.json";
+        private static string AltConfigSchemaFilePath = $"{TestConfigPrefix}4.json";
+        private static string RestoreConfigSchemaFilePath = $"{TestConfigPrefix}3.json";
         
         // Settings fields
         private const string SettingsHostname = "";
