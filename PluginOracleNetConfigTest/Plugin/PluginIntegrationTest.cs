@@ -335,8 +335,6 @@ namespace PluginOracleNetTest.Plugin
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
 
-            const string wrongUsername = "ITSALLWRONG";
-
             var propsMissingSettings = GetSettings();
             propsMissingSettings.ConfigSchemaFilePath = PropsMissingConfigSchemaFilePath;
 
@@ -352,7 +350,7 @@ namespace PluginOracleNetTest.Plugin
 
             // assert
             Assert.IsType<ConnectResponse>(response);
-            Assert.Equal("Query #2 in the configuration file is missing the property 'query'.", response.SettingsError);
+            Assert.Equal("Query #3 in the configuration file is missing the property 'query'.", response.SettingsError);
             Assert.Equal("", response.ConnectionError);
             Assert.Equal("", response.OauthError);
 
@@ -376,8 +374,6 @@ namespace PluginOracleNetTest.Plugin
 
             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
             var client = new Publisher.PublisherClient(channel);
-
-            const string wrongUsername = "ITSALLWRONG";
 
             var propsMissingSettings = GetSettings();
             propsMissingSettings.ConfigSchemaFilePath = DuplicateIdsConfigSchemaFilePath;

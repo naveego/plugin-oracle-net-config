@@ -71,9 +71,16 @@ namespace PluginOracleNetConfig.API.Utility
                     var propName = match.Groups[1].Value;
                     if (!string.IsNullOrWhiteSpace(propName))
                     {
-                        throw new Exception(
-                            @$"Query #{jse.Path.TrimStart('[').TrimEnd(']')} 
-in the configuration file is missing the property '{propName}'.".Replace("\n", ""));
+                        if (int.TryParse(jse.Path.TrimStart('[').TrimEnd(']'), out var queryNum))
+                        {
+                            throw new Exception(@$"Query #{queryNum+1} in the configuration file is missing 
+the property '{propName}'.".Replace("\n", ""));
+                        }
+                        else
+                        {
+                            throw new Exception(@$"A query in the configuration file is missing 
+the property '{propName}'.".Replace("\n", ""));
+                        }
                     }
                 }
                 else
