@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Naveego.Sdk.Plugins;
 using Newtonsoft.Json;
 
 // Author: Gabe Hanna
@@ -15,10 +12,10 @@ namespace PluginOracleNetConfig.DataContracts
     /// </summary>
     public class ConfigQuery
     {
-        [JsonProperty("id")]
+        [JsonProperty("id", Required = Required.Always)]
         public string Id { get; set; }
         
-        [JsonProperty("query")]
+        [JsonProperty("query", Required = Required.Always)]
         public string Query { get; set; }
     }
 }

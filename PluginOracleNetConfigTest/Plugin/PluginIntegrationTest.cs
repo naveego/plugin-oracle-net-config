@@ -31,20 +31,29 @@ namespace PluginOracleNetTest.Plugin
         private static string TestPropertyName2 = "EMAIL";
         private static int TestPropertyCount2 = 4;
 
-        // TODO: (When testing) Specify file path to config.json
-        private static string TestConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-current>.json";
-        private static string AltConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-alt>.json";
-        private static string RestoreConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-restore>.json";
+        // (When testing) Specify file path to config.json
+        private static string TestConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>-current.json";
+        private static string PropsMissingConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>.json";
+        private static string DuplicateIdsConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>2.json";
+        private static string AltConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>4.json";
+        private static string RestoreConfigSchemaFilePath = "/home/ubuntu/Downloads/<config-prefix>3.json";
+        
+        // Settings fields
+        private const string SettingsHostname = "";
+        private const string SettingsPort = "";
+        private const string SettingsPassword = "";
+        private const string SettingsUsername = "";
+        private const string SettingsServiceName = "";
 
         private Settings GetSettings()
         {
             return new Settings
             {
-                Hostname = "",
-                Port = "",
-                Password = "",
-                Username = "",
-                ServiceName = "",
+                Hostname = SettingsHostname,
+                Port = SettingsPort,
+                Password = SettingsPassword,
+                Username = SettingsUsername,
+                ServiceName = SettingsServiceName,
                 ConfigSchemaFilePath = TestConfigSchemaFilePath
             };
         }
@@ -182,78 +191,6 @@ namespace PluginOracleNetTest.Plugin
                         Type = PropertyType.String,
                         IsKey = false
                     }
-                    /*new Property
-                    {
-                        Id = "LASTNAME",
-                        Name = "LASTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "FIRSTNAME",
-                        Name = "FIRSTNAME",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "ADDRESS",
-                        Name = "ADDRESS",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "CITY",
-                        Name = "CITY",
-                        Type = PropertyType.String,
-                        IsKey = false
-                    },
-                    new Property
-                    {
-                        Id = "PERSONID",
-                        Name = "PERSONID",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    }*/
-                    /*new Property
-                    {
-                        Id = "Id",
-                        Name = "Id",
-                        Type = PropertyType.Integer,
-                        IsKey = true
-                    },
-                    new Property
-                    {
-                        Id = "Name",
-                        Name = "Name",
-                        Type = PropertyType.String
-                    },
-                    new Property
-                    {
-                        Id = "DateTime",
-                        Name = "DateTime",
-                        Type = PropertyType.Datetime
-                    },
-                    new Property
-                    {
-                        Id = "Date",
-                        Name = "Date",
-                        Type = PropertyType.Date
-                    },
-                    new Property
-                    {
-                        Id = "Time",
-                        Name = "Time",
-                        Type = PropertyType.Time
-                    },
-                    new Property
-                    {
-                        Id = "Decimal",
-                        Name = "Decimal",
-                        Type = PropertyType.Decimal
-                    },*/
                 }
             };
         }
@@ -356,11 +293,11 @@ namespace PluginOracleNetTest.Plugin
             {
                 SettingsJson = JsonConvert.SerializeObject(new Settings
                 {
-                    Hostname = "",
-                    Port = "",
-                    Password = "",
+                    Hostname = SettingsHostname,
+                    Port = SettingsPort,
+                    Password = SettingsPassword,
                     Username = wrongUsername,
-                    ServiceName = "",
+                    ServiceName = SettingsServiceName,
                     ConfigSchemaFilePath = TestConfigSchemaFilePath
                 }),
                 OauthConfiguration = new OAuthConfiguration(),
@@ -380,8 +317,91 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
+        
+        [Fact]
+        public async Task ConnectPropsMissingTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
 
-        // CLOB
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            const string wrongUsername = "ITSALLWRONG";
+
+            var propsMissingSettings = GetSettings();
+            propsMissingSettings.ConfigSchemaFilePath = PropsMissingConfigSchemaFilePath;
+
+            var request = new ConnectRequest
+            {
+                SettingsJson = JsonConvert.SerializeObject(propsMissingSettings),
+                OauthConfiguration = new OAuthConfiguration(),
+                OauthStateJson = ""
+            };
+
+            // act
+            var response = client.Connect(request);
+
+            // assert
+            Assert.IsType<ConnectResponse>(response);
+            Assert.Equal("Query #2 in the configuration file is missing the property 'query'.", response.SettingsError);
+            Assert.Equal("", response.ConnectionError);
+            Assert.Equal("", response.OauthError);
+
+            // cleanup
+            await channel.ShutdownAsync();
+            await server.ShutdownAsync();
+        }
+        
+        [Fact]
+        public async Task ConnectDuplicateIdsTest()
+        {
+            // setup
+            Server server = new Server
+            {
+                Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
+                Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
+            };
+            server.Start();
+
+            var port = server.Ports.First().BoundPort;
+
+            var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
+            var client = new Publisher.PublisherClient(channel);
+
+            const string wrongUsername = "ITSALLWRONG";
+
+            var propsMissingSettings = GetSettings();
+            propsMissingSettings.ConfigSchemaFilePath = DuplicateIdsConfigSchemaFilePath;
+
+            var request = new ConnectRequest
+            {
+                SettingsJson = JsonConvert.SerializeObject(propsMissingSettings),
+                OauthConfiguration = new OAuthConfiguration(),
+                OauthStateJson = ""
+            };
+
+            // act
+            var response = client.Connect(request);
+
+            // assert
+            Assert.IsType<ConnectResponse>(response);
+            Assert.Equal("2 queries in the configuration file contain duplicate id 'Query1'.", response.SettingsError);
+            Assert.Equal("", response.ConnectionError);
+            Assert.Equal("", response.OauthError);
+
+            // cleanup
+            await channel.ShutdownAsync();
+            await server.ShutdownAsync();
+        }
+
         [Fact]
         public async Task DiscoverSchemasAllTest()
         {
@@ -451,7 +471,6 @@ namespace PluginOracleNetTest.Plugin
             // Assert.Equal(PropertyType.String, property2.Type);
             // Assert.True(property2.IsKey);
             // Assert.False(property2.IsNullable);
-            
 
             // cleanup
             await channel.ShutdownAsync();
@@ -574,103 +593,6 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-        // [Fact]
-        // public async Task DiscoverSchemasRefreshQueryTest()
-        // {
-        //     // setup
-        //     Server server = new Server
-        //     {
-        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
-        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-        //     };
-        //     server.Start();
-        //
-        //     var port = server.Ports.First().BoundPort;
-        //
-        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-        //     var client = new Publisher.PublisherClient(channel);
-        //
-        //     var connectRequest = GetConnectSettings();
-        //
-        //     var request = new DiscoverSchemasRequest
-        //     {
-        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-        //         SampleSize = 10,
-        //         ToRefresh = { GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}") }
-        //     };
-        //
-        //     // act
-        //     client.Connect(connectRequest);
-        //     var response = client.DiscoverSchemas(request);
-        //
-        //     // assert
-        //     Assert.IsType<DiscoverSchemasResponse>(response);
-        //     Assert.Single(response.Schemas);
-        //
-        //     var schema = response.Schemas[0];
-        //     Assert.Equal($"test", schema.Id);
-        //     Assert.Equal("test", schema.Name);
-        //     Assert.Equal($"SELECT * FROM {TestSchemaID}", schema.Query);
-        //     Assert.Equal(TestSampleCount, schema.Sample.Count);
-        //     Assert.Equal(TestPropertyCount, schema.Properties.Count);
-        //
-        //     var property = schema.Properties[0];
-        //     Assert.Equal(TestPropertyID, property.Id);
-        //     Assert.Equal(TestPropertyName, property.Name);
-        //     Assert.Equal("", property.Description);
-        //     Assert.Equal(PropertyType.String, property.Type);
-        //     Assert.False(property.IsKey);
-        //     Assert.True(property.IsNullable);
-        //
-        //     // cleanup
-        //     await channel.ShutdownAsync();
-        //     await server.ShutdownAsync();
-        // }
-        //
-        // [Fact]
-        // public async Task DiscoverSchemasRefreshQueryBadSyntaxTest()
-        // {
-        //     // setup
-        //     Server server = new Server
-        //     {
-        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
-        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-        //     };
-        //     server.Start();
-        //
-        //     var port = server.Ports.First().BoundPort;
-        //
-        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-        //     var client = new Publisher.PublisherClient(channel);
-        //
-        //     var connectRequest = GetConnectSettings();
-        //
-        //     var request = new DiscoverSchemasRequest
-        //     {
-        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-        //         SampleSize = 10,
-        //         ToRefresh = { GetTestSchema("bad syntax") }
-        //     };
-        //
-        //     // act
-        //     client.Connect(connectRequest);
-        //
-        //     try
-        //     {
-        //         var response = client.DiscoverSchemas(request);
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         // assert
-        //         Assert.IsType<RpcException>(e);
-        //         Assert.Contains("ORA-", e.Message);
-        //     }
-        //
-        //     // cleanup
-        //     await channel.ShutdownAsync();
-        //     await server.ShutdownAsync();
-        // }
-
         [Fact]
         public async Task ReadStreamQuerySchemaTest()
         {
@@ -733,80 +655,6 @@ namespace PluginOracleNetTest.Plugin
             await server.ShutdownAsync();
         }
 
-        // [Fact]
-        // public async Task ReadStreamQuerySchemaTest()
-        // {
-        //     // setup
-        //     Server server = new Server
-        //     {
-        //         Services = { Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin()) },
-        //         Ports = { new ServerPort("localhost", 0, ServerCredentials.Insecure) }
-        //     };
-        //     server.Start();
-        //
-        //     var port = server.Ports.First().BoundPort;
-        //
-        //     var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-        //     var client = new Publisher.PublisherClient(channel);
-        //
-        //     //var schema = GetTestSchema("test", "test", $"SELECT * FROM \"<schema_name>\".\"ACCOUNTARCHIVE\"");
-        //     var schema = GetTestSchema("test", "test", $"SELECT * FROM {TestSchemaID}");
-        //     
-        //     var connectRequest = GetConnectSettings();
-        //
-        //     var schemaRequest = new DiscoverSchemasRequest
-        //     {
-        //         Mode = DiscoverSchemasRequest.Types.Mode.Refresh,
-        //         ToRefresh = { schema }
-        //     };
-        //
-        //     var request = new ReadRequest()
-        //     {
-        //         DataVersions = new DataVersions
-        //         {
-        //             JobId = "test"
-        //         },
-        //         JobId = "test",
-        //     };
-        //
-        //     // act
-        //     client.Connect(connectRequest);
-        //     var schemasResponse = client.DiscoverSchemas(schemaRequest);
-        //     request.Schema = schemasResponse.Schemas[0];
-        //
-        //     var response = client.ReadStream(request);
-        //     var responseStream = response.ResponseStream;
-        //     var records = new List<Naveego.Sdk.Plugins.Record>();
-        //
-        //     while (await responseStream.MoveNext())
-        //     {
-        //         records.Add(responseStream.Current);
-        //     }
-        //
-        //     // assert
-        //     Assert.Equal(421, records.Count);
-        //
-        //     var record = JsonConvert.DeserializeObject<Dictionary<string, object>>(records[0].DataJson);
-        //     // Assert.Equal("3", record["\"CHANNEL_ID\""]);
-        //     // Assert.Equal("Direct Sales", record["\"CHANNEL_DESC\""]);
-        //     // Assert.Equal("Direct", record["\"CHANNEL_CLASS\""]);
-        //     // Assert.Equal("12", record["\"CHANNEL_CLASS_ID\""]);
-        //     // Assert.Equal("Channel total", record["\"CHANNEL_TOTAL\""]);
-        //     // Assert.Equal("1", record["\"CHANNEL_TOTAL_ID\""]);
-        //     Assert.Equal("dc6fdfef-812c-4c98-93cd-a4f839416c99", record["\"ID\""]);
-        //     Assert.Equal("Arlette", record["\"FIRST_NAME\""]);
-        //     Assert.Equal("Stopher", record["\"LAST_NAME\""]);
-        //     Assert.Equal("Spokane", record["\"CITY\""]);
-        //     Assert.Equal("WA", record["\"STATE\""]);
-        //     Assert.Equal("8 Golden Leaf Drive", record["\"ADDRESS\""]);
-        //     Assert.Equal("99205", record["\"ZIP\""]);
-        //     Assert.Equal("Erica Smith", record["\"REP\""]);
-        //
-        //     // cleanup
-        //     await channel.ShutdownAsync();
-        //     await server.ShutdownAsync();
-        // }
-
         [Fact]
         public async Task ReadStreamLimitTest()
         {
@@ -864,283 +712,5 @@ namespace PluginOracleNetTest.Plugin
             await channel.ShutdownAsync();
             await server.ShutdownAsync();
         }
-        
-//         [Fact]
-//         public async Task PrepareWriteTest()
-//         {
-//             // setup
-//             Server server = new Server
-//             {
-//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-//             };
-//             server.Start();
-//
-//             var port = server.Ports.First().BoundPort;
-//
-//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-//             var client = new Publisher.PublisherClient(channel);
-//
-//             var connectRequest = GetConnectSettings();
-//
-//             var request = new PrepareWriteRequest()
-//             {
-//                 Schema = GetTestSchema(),
-//                 CommitSlaSeconds = 1,
-//                 Replication = new ReplicationWriteRequest
-//                 {
-//                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
-//                     {
-//                         SchemaName = "<schema_name>",
-//                         GoldenTableName = "gr_test",
-//                         VersionTableName = "vr_test"
-//                     })
-//                 },
-//                 DataVersions = new DataVersions
-//                 {
-//                     JobId = "jobUnitTest",
-//                     ShapeId = "shapeUnitTest",
-//                     JobDataVersion = 1,
-//                     ShapeDataVersion = 2
-//                 }
-//             };
-//
-//             // act
-//             client.Connect(connectRequest);
-//             var response = client.PrepareWrite(request);
-//
-//             // assert
-//             Assert.IsType<PrepareWriteResponse>(response);
-//
-//             // cleanup
-//             await channel.ShutdownAsync();
-//             await server.ShutdownAsync();
-//         }
-//         
-//         [Fact]
-//         public async Task WriteTest()
-//         {
-//             // setup
-//             Server server = new Server
-//             {
-//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-//             };
-//             server.Start();
-//
-//             var port = server.Ports.First().BoundPort;
-//
-//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-//             var client = new Publisher.PublisherClient(channel);
-//
-//             var connectRequest = GetConnectSettings();
-//
-//             var configureRequest = new ConfigureWriteRequest
-//             {
-//                 Form = new ConfigurationFormRequest
-//                 {
-//                     DataJson = JsonConvert.SerializeObject(new ConfigureWriteFormData
-//                     {
-//                         StoredProcedure = "UpsertInto<table_name>"
-//                     })
-//                 }
-//             };
-//
-//             var records = new List<Record>()
-//             {
-//                 new Record
-//                 {
-//                     Action = Record.Types.Action.Upsert,
-//                     CorrelationId = "<table_name>",
-//                     RecordId = "record1",
-//                     DataJson = @"{
-//     ""U_ID"":""aaaaaaaa-2222-4e8e-99b4-7f8bb172bf9a"",
-//     ""U_FIRST_NAME"":""Test"",
-//     ""U_LAST_NAME"":""First"",
-//     ""U_EMAIL"":""test.first@email.net"",
-//     ""U_ADDRESS"":""1234 Test Road"",
-//     ""U_CITY"":""Test"",
-//     ""U_STATE"":""MI"",
-//     ""U_ZIP"":""55555"",
-//     ""U_GENERAL_LEDGER"":""11112"",
-//     ""U_BALANCE"":""0.00"",
-//     ""U_REP"":""Ron Jordans""
-// }",
-//                 }
-//             };
-//
-//             var recordAcks = new List<RecordAck>();
-//
-//             // act
-//             client.Connect(connectRequest);
-//
-//             var configureResponse = client.ConfigureWrite(configureRequest);
-//
-//             var prepareWriteRequest = new PrepareWriteRequest()
-//             {
-//                 Schema = configureResponse.Schema,
-//                 CommitSlaSeconds = 1000,
-//                 DataVersions = new DataVersions
-//                 {
-//                     JobId = "jobUnitTest",
-//                     ShapeId = "shapeUnitTest",
-//                     JobDataVersion = 1,
-//                     ShapeDataVersion = 1
-//                 }
-//             };
-//             client.PrepareWrite(prepareWriteRequest);
-//
-//             using (var call = client.WriteStream())
-//             {
-//                 var responseReaderTask = Task.Run(async () =>
-//                 {
-//                     while (await call.ResponseStream.MoveNext())
-//                     {
-//                         var ack = call.ResponseStream.Current;
-//                         recordAcks.Add(ack);
-//                     }
-//                 });
-//
-//                 foreach (Record record in records)
-//                 {
-//                     await call.RequestStream.WriteAsync(record);
-//                 }
-//
-//                 await call.RequestStream.CompleteAsync();
-//                 await responseReaderTask;
-//             }
-//
-//             // assert
-//             Assert.Single(recordAcks);
-//             Assert.Equal("", recordAcks[0].Error);
-//             Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
-//
-//             // cleanup
-//             await channel.ShutdownAsync();
-//             await server.ShutdownAsync();
-//         }
-//         
-//         [Fact]
-//         public async Task ReplicationWriteTest()
-//         {
-//             // setup
-//             Server server = new Server
-//             {
-//                 Services = {Publisher.BindService(new PluginOracleNetConfig.Plugin.Plugin())},
-//                 Ports = {new ServerPort("localhost", 0, ServerCredentials.Insecure)}
-//             };
-//             server.Start();
-//
-//             var port = server.Ports.First().BoundPort;
-//
-//             var channel = new Channel($"localhost:{port}", ChannelCredentials.Insecure);
-//             var client = new Publisher.PublisherClient(channel);
-//
-//             var connectRequest = GetConnectSettings();
-//
-//             var prepareWriteRequest = new PrepareWriteRequest()
-//             {
-//                 Schema = GetTestReplicationSchema(),
-//                 CommitSlaSeconds = 1000,
-//                 Replication = new ReplicationWriteRequest
-//                 {
-//                     SettingsJson = JsonConvert.SerializeObject(new ConfigureReplicationFormData
-//                     {
-//                         SchemaName = "<schema_name>",
-//                         GoldenTableName = "gr_test",
-//                         VersionTableName = "vr_test"
-//                     })
-//                 },
-//                 DataVersions = new DataVersions
-//                 {
-//                     JobId = "jobUnitTest",
-//                     ShapeId = "shapeUnitTest",
-//                     JobDataVersion = 1,
-//                     ShapeDataVersion = 1
-//                 }
-//             };
-//
-//             var records = new List<Record>()
-//             {
-//                 {
-//                     new Record
-//                     {
-//                         Action = Record.Types.Action.Upsert,
-//                         CorrelationId = "<table_name>",
-//                         RecordId = "record1",
-//                         //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}",
-//                         DataJson = $@"{{
-//     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-//     ""FIRST_NAME"":""Test"",
-//     ""LAST_NAME"":""Second"",
-//     ""EMAIL"":""test.second@email.net"",
-//     ""ADDRESS"":""5678 Test Road"",
-//     ""CITY"":""Test"",
-//     ""STATE"":""MI"",
-//     ""ZIP"":""91952"",
-//     ""GENERAL_LEDGER"":""11190"",
-//     ""BALANCE"":""1.00"",
-//     ""REP"":""Ron Jordans""
-// }}".Replace("\n", ""),
-//                         Versions =
-//                         {
-//                             new RecordVersion
-//                             {
-//                                 RecordId = "version1",
-//                                 //DataJson = $"{{\"Id\":1,\"Name\":\"Test Company\",\"Date\":\"{DateTime.Now.Date}\",\"Time\":\"{DateTime.Now:hh:mm:ss}\",\"Decimal\":\"13.04\"}}"
-//                                 DataJson = $@"{{
-//     ""ID"":""aaaaaaaa-1313-4e8e-99b4-7f8bb172bf9a"",
-//     ""FIRST_NAME"":""Test"",
-//     ""LAST_NAME"":""Second"",
-//     ""EMAIL"":""test.second@email.net"",
-//     ""ADDRESS"":""5678 Test Road"",
-//     ""CITY"":""Test"",
-//     ""STATE"":""MI"",
-//     ""ZIP"":""91952"",
-//     ""GENERAL_LEDGER"":""11190"",
-//     ""BALANCE"":""1.00"",
-//     ""REP"":""Ron Jordans""
-// }}".Replace("\n", "")
-//                             }
-//                         }
-//                     }
-//                 }
-//             };
-//
-//             var recordAcks = new List<RecordAck>();
-//
-//             // act
-//             client.Connect(connectRequest);
-//             client.PrepareWrite(prepareWriteRequest);
-//
-//             using (var call = client.WriteStream())
-//             {
-//                 var responseReaderTask = Task.Run(async () =>
-//                 {
-//                     while (await call.ResponseStream.MoveNext())
-//                     {
-//                         var ack = call.ResponseStream.Current;
-//                         recordAcks.Add(ack);
-//                     }
-//                 });
-//
-//                 foreach (Record record in records)
-//                 {
-//                     await call.RequestStream.WriteAsync(record);
-//                 }
-//
-//                 await call.RequestStream.CompleteAsync();
-//                 await responseReaderTask;
-//             }
-//
-//             // assert
-//             Assert.Single(recordAcks);
-//             Assert.Equal("", recordAcks[0].Error);
-//             Assert.Equal("<table_name>", recordAcks[0].CorrelationId);
-//
-//             // cleanup
-//             await channel.ShutdownAsync();
-//             await server.ShutdownAsync();
-//         }
     }
 }
