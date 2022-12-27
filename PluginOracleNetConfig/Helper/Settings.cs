@@ -11,6 +11,7 @@ namespace PluginOracleNetConfig.Helper
         public string Username { get; set; }
         public string Password { get; set; }
         public string ServiceName { get; set; }
+        public int DiscoveryConcurrency { get; set; }
         
         /// <summary>
         /// The configuration file that defines schemas

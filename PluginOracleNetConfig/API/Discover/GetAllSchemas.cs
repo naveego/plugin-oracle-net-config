@@ -31,12 +31,17 @@ namespace PluginOracleNetConfig.API.Discover
             }
             
             // loop over each config list item
-            foreach (var cq in configQueries)
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = settings?.DiscoveryConcurrency ?? 5,
+            };
+            
+            Parallel.ForEach(configQueries, parallelOptions, async cq =>
             {
                 // synthesize schema properties from the query
                 // add schema to a list
                 resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq));
-            }
+            });
             
             // loop over final list
             foreach (var rs in resultSchemas)
