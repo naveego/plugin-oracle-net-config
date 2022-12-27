@@ -13,8 +13,13 @@ namespace PluginOracleNetConfig.API.Discover
 {
     public static partial class Discover
     {
-        private static async Task<Schema> GetRefreshSchemaForQuery(IConnectionFactory connFactory, ConfigQuery query)
+        private static async Task<Schema> GetRefreshSchemaForQuery(IConnectionFactory connFactory, ConfigQuery query, Schema originalSchema)
         {
+            if (originalSchema != null && string.Equals(originalSchema.Query, query.Query, StringComparison.CurrentCultureIgnoreCase))
+            {
+                return originalSchema;
+            }
+
             // read in schema from settings
             var conn = connFactory.GetConnection();
 

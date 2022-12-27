@@ -18,7 +18,7 @@ namespace PluginOracleNetConfig.API.Discover
             {
                 // refresh config queries from config file
                 var importQuery = Utility.Utility.GetConfigQuery(schema.Id, true, settings.ConfigSchemaFilePath);
-                var outputSchema = await GetRefreshSchemaForQuery(connFactory, importQuery);
+                var outputSchema = await GetRefreshSchemaForQuery(connFactory, importQuery, schema);
 
                 // get sample and count
                 yield return await AddSampleAndCount(connFactory, outputSchema, sampleSize);

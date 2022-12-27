@@ -16,8 +16,8 @@ namespace PluginOracleNetConfig.API.Discover
         public static async IAsyncEnumerable<Schema> GetAllSchemas(IConnectionFactory connFactory, Settings settings, int sampleSize = 5)
         {
             // get the config list
-            List<ConfigQuery> configQueries = new List<ConfigQuery>();
-            List<Schema> resultSchemas = new List<Schema>();
+            List<ConfigQuery> configQueries;
+            var resultSchemas = new List<Schema>();
 
             if (settings != null)
             {
@@ -33,14 +33,14 @@ namespace PluginOracleNetConfig.API.Discover
             // loop over each config list item
             var parallelOptions = new ParallelOptions
             {
-                MaxDegreeOfParallelism = settings?.DiscoveryConcurrency ?? 5,
+                MaxDegreeOfParallelism = settings?.DiscoveryConcurrency ?? 1,
             };
             
             Parallel.ForEach(configQueries, parallelOptions, async cq =>
             {
                 // synthesize schema properties from the query
                 // add schema to a list
-                resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq));
+                resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq, null));
             });
             
             // loop over final list
@@ -57,11 +57,21 @@ namespace PluginOracleNetConfig.API.Discover
         private static async Task<Schema> AddSampleAndCount(IConnectionFactory connFactory, Schema schema,
             int sampleSize)
         {
-            // add sample and count
-            var records = Read.Read.ReadRecords(connFactory, schema).Take(sampleSize);
-            schema.Sample.AddRange(await records.ToListAsync());
-            schema.Count = await GetCountOfRecords(connFactory, schema);
-
+            if (sampleSize == 0)
+            {
+                schema.Count = new Count
+                {
+                    Kind = Count.Types.Kind.Unavailable
+                };
+            }
+            else
+            {
+                // add sample and count
+                var records = Read.Read.ReadRecords(connFactory, schema).Take(sampleSize);
+                schema.Sample.AddRange(await records.ToListAsync());
+                schema.Count = await GetCountOfRecords(connFactory, schema);
+            }
+            
             return schema;
         }
         
