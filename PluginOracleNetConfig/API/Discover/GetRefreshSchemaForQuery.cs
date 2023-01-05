@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Naveego.Sdk.Logging;
 using Naveego.Sdk.Plugins;
 using PluginOracleNetConfig.API.Factory;
 using PluginOracleNetConfig.API.Utility;
@@ -27,7 +28,7 @@ namespace PluginOracleNetConfig.API.Discover
             {
                 // open connection
                 await conn.OpenAsync();
-                
+
                 // re-create schema
                 var outputSchema = new Schema
                 {
@@ -36,14 +37,14 @@ namespace PluginOracleNetConfig.API.Discover
                     Name = query.Id,
                     Description = ""
                 };
-                
+
                 // run the SELECT query from the import schema
                 var cmd = connFactory.GetCommand(query.Query, conn);
                 var reader = await cmd.ExecuteReaderAsync();
                 var schemaTable = reader.GetSchemaTable();
-                
+
                 var properties = new List<Property>();
-                        
+
                 var unNamedColIndex = 0;
 
                 // get each column and create a property for the column
@@ -64,8 +65,12 @@ namespace PluginOracleNetConfig.API.Discover
                         Name = colName,
                         Description = "",
                         Type = GetPropertyType(row),
-                        IsKey = string.IsNullOrWhiteSpace(row["IsKey"].ToString()) ? false : Boolean.Parse(row["IsKey"].ToString()),
-                        IsNullable = string.IsNullOrWhiteSpace(row["AllowDBNull"].ToString()) ? false : Boolean.Parse(row["AllowDBNull"].ToString()),
+                        IsKey = string.IsNullOrWhiteSpace(row["IsKey"].ToString())
+                            ? false
+                            : Boolean.Parse(row["IsKey"].ToString()),
+                        IsNullable = string.IsNullOrWhiteSpace(row["AllowDBNull"].ToString())
+                            ? false
+                            : Boolean.Parse(row["AllowDBNull"].ToString()),
                         IsCreateCounter = false,
                         IsUpdateCounter = false,
                         PublisherMetaJson = ""
@@ -78,7 +83,7 @@ namespace PluginOracleNetConfig.API.Discover
                 // add only discovered properties to schema
                 outputSchema.Properties.Clear();
                 outputSchema.Properties.AddRange(properties);
-                
+
                 outputSchema.Query = query.Query; // include query in the description
 
                 return outputSchema;

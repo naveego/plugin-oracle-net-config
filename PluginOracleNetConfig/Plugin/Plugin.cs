@@ -114,6 +114,7 @@ namespace PluginOracleNetConfig.Plugin
 
                 if (!await conn.PingAsync())
                 {
+                    await conn.CloseAsync();
                     return new ConnectResponse
                     {
                         OauthStateJson = request.OauthStateJson,
@@ -122,6 +123,8 @@ namespace PluginOracleNetConfig.Plugin
                         SettingsError = ""
                     };
                 }
+
+                await conn.CloseAsync();
             }
             catch (Exception e)
             {

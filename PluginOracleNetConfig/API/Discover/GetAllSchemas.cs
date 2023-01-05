@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,7 +18,8 @@ namespace PluginOracleNetConfig.API.Discover
         {
             // get the config list
             List<ConfigQuery> configQueries;
-            var resultSchemas = new List<Schema>();
+            var resultSchemas = new ConcurrentBag<Schema>();
+            var exceptions = new ConcurrentBag<Exception>();
 
             if (settings != null)
             {
@@ -38,10 +40,22 @@ namespace PluginOracleNetConfig.API.Discover
             
             Parallel.ForEach(configQueries, parallelOptions, async cq =>
             {
-                // synthesize schema properties from the query
-                // add schema to a list
-                resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq, null));
+                try
+                {
+                    // synthesize schema properties from the query
+                    // add schema to a list
+                    resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq, null));
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e);
+                }
             });
+
+            if (!exceptions.IsEmpty)
+            {
+                throw new AggregateException(exceptions);
+            }
             
             // loop over final list
             foreach (var rs in resultSchemas)
