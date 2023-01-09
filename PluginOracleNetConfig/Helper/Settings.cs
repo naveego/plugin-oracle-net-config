@@ -54,6 +54,11 @@ namespace PluginOracleNetConfig.Helper
                 throw new Exception("The ConfigSchemaFilePath property must be set");
             }
 
+            if (DiscoveryConcurrency <= 0)
+            {
+                throw new Exception("Discovery Query Concurrency must be greater than 0");
+            }
+            
             Utility.LoadQueryConfigsFromJson(ConfigSchemaFilePath);
         }
 
