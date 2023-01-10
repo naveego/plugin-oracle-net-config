@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,8 +17,9 @@ namespace PluginOracleNetConfig.API.Discover
         public static async IAsyncEnumerable<Schema> GetAllSchemas(IConnectionFactory connFactory, Settings settings, int sampleSize = 5)
         {
             // get the config list
-            List<ConfigQuery> configQueries = new List<ConfigQuery>();
-            List<Schema> resultSchemas = new List<Schema>();
+            List<ConfigQuery> configQueries;
+            var resultSchemas = new ConcurrentBag<Schema>();
+            var exceptions = new ConcurrentBag<Exception>();
 
             if (settings != null)
             {
@@ -31,11 +33,28 @@ namespace PluginOracleNetConfig.API.Discover
             }
             
             // loop over each config list item
-            foreach (var cq in configQueries)
+            var parallelOptions = new ParallelOptions
             {
-                // synthesize schema properties from the query
-                // add schema to a list
-                resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq));
+                MaxDegreeOfParallelism = settings?.DiscoveryConcurrency ?? 1,
+            };
+            
+            Parallel.ForEach(configQueries, parallelOptions, async cq =>
+            {
+                try
+                {
+                    // synthesize schema properties from the query
+                    // add schema to a list
+                    resultSchemas.Add(await GetRefreshSchemaForQuery(connFactory, cq, null));
+                }
+                catch (Exception e)
+                {
+                    exceptions.Add(e);
+                }
+            });
+
+            if (!exceptions.IsEmpty)
+            {
+                throw new AggregateException(exceptions);
             }
             
             // loop over final list
@@ -52,11 +71,21 @@ namespace PluginOracleNetConfig.API.Discover
         private static async Task<Schema> AddSampleAndCount(IConnectionFactory connFactory, Schema schema,
             int sampleSize)
         {
-            // add sample and count
-            var records = Read.Read.ReadRecords(connFactory, schema).Take(sampleSize);
-            schema.Sample.AddRange(await records.ToListAsync());
-            schema.Count = await GetCountOfRecords(connFactory, schema);
-
+            if (sampleSize == 0)
+            {
+                schema.Count = new Count
+                {
+                    Kind = Count.Types.Kind.Unavailable
+                };
+            }
+            else
+            {
+                // add sample and count
+                var records = Read.Read.ReadRecords(connFactory, schema).Take(sampleSize);
+                schema.Sample.AddRange(await records.ToListAsync());
+                schema.Count = await GetCountOfRecords(connFactory, schema);
+            }
+            
             return schema;
         }
         

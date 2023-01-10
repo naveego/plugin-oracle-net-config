@@ -11,6 +11,7 @@ namespace PluginOracleNetConfig.Helper
         public string Username { get; set; }
         public string Password { get; set; }
         public string ServiceName { get; set; }
+        public int DiscoveryConcurrency { get; set; } = 1;
         
         /// <summary>
         /// The configuration file that defines schemas
@@ -53,6 +54,11 @@ namespace PluginOracleNetConfig.Helper
                 throw new Exception("The ConfigSchemaFilePath property must be set");
             }
 
+            if (DiscoveryConcurrency <= 0)
+            {
+                throw new Exception("Discovery Query Concurrency must be greater than 0");
+            }
+            
             Utility.LoadQueryConfigsFromJson(ConfigSchemaFilePath);
         }
 

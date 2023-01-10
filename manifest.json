@@ -39,7 +39,8 @@
         "ServiceName",
         "Username",
         "Password",
-        "ConfigSchemaFilePath"
+        "ConfigSchemaFilePath",
+        "DiscoveryConcurrency"
       ],
       "Password": {
         "ui:widget": "password"
@@ -78,6 +79,12 @@
           "type": "string",
           "title": "Config Schema File Path",
           "description": "The path to the configuration schema file on local computer"
+        },
+        "DiscoveryConcurrency": {
+          "type": "number",
+          "title": "Discovery Query Concurrency",
+          "description": "The number of queries to allow running concurrently during discovery",
+          "default": 1
         }
       },
       "required": [
@@ -85,7 +92,8 @@
         "Username",
         "Password",
         "ServiceName",
-        "ConfigSchemaFilePath"
+        "ConfigSchemaFilePath",
+        "DiscoveryConcurrency"
       ]
     }
   }
